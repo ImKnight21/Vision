@@ -1,0 +1,8 @@
+.stats-grid {
+  display: grid;
+  /* Panels size themselves: as the viewport narrows the grid reflows from
+     several columns down to one without a single hard-coded breakpoint. */
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}

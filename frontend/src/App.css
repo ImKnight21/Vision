@@ -1,0 +1,129 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100dvh;
+}
+
+.app__body {
+  display: grid;
+  /* Sidebar holds a fixed, readable column; the chart takes the rest. */
+  grid-template-columns: minmax(19rem, 22rem) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.app__sidebar {
+  min-height: 0;
+  border-right: var(--border);
+  overflow: hidden;
+}
+
+.app__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/* This column scrolls, so nothing inside it may be squeezed to fit. Without
+   this the chart collapses: `overflow: hidden` zeroes a flex item's automatic
+   minimum size, which lets the container shrink it to its borders. */
+.app__main > * {
+  flex-shrink: 0;
+}
+
+.app__chart {
+  overflow: hidden;
+}
+
+.app__chart-source {
+  color: var(--text-faint);
+  font-size: var(--step--1);
+}
+
+.app__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3);
+  border-color: var(--down);
+  color: var(--down);
+}
+
+.app__error-tag {
+  padding: 0 var(--space-2);
+  background: var(--down);
+  color: var(--bg);
+  letter-spacing: 0.14em;
+}
+
+.app__retry {
+  margin-left: auto;
+  color: var(--phosphor);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.app__disclaimer {
+  margin: var(--space-2) 0 var(--space-5);
+  font-size: var(--step--1);
+  line-height: 1.6;
+  color: var(--text-faint);
+  max-width: 60ch;
+}
+
+/* --- mobile: the sidebar becomes a drawer ----------------------- */
+@media (max-width: 960px) {
+  .app__sidebar {
+    display: none;
+  }
+
+  .app__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app__main {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+}
+
+.app__drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+}
+
+.app__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  cursor: default;
+}
+
+.app__drawer-panel {
+  position: relative;
+  width: min(88vw, 24rem);
+  height: 100%;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--phosphor);
+  box-shadow: var(--glow-hard);
+  animation: slide-in 140ms ease-out;
+}
+
+@keyframes slide-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* The drawer only exists below the sidebar breakpoint. */
+@media (min-width: 961px) {
+  .app__drawer {
+    display: none;
+  }
+}

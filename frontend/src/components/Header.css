@@ -1,0 +1,106 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  height: var(--header-height);
+  padding: 0 var(--space-3);
+  border-bottom: var(--border);
+  background: var(--bg-panel);
+  /* The header is the one element that should feel lit from within. */
+  box-shadow: 0 1px 0 var(--phosphor-ghost);
+}
+
+.header__brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.header__logo {
+  color: var(--phosphor);
+  text-shadow: var(--glow-hard);
+  font-size: var(--step-1);
+  letter-spacing: -0.1em;
+}
+
+.header__title {
+  font-size: var(--step-2);
+  letter-spacing: 0.22em;
+}
+
+.header__subtitle {
+  font-size: var(--step--1);
+  letter-spacing: 0.18em;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.header__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--step--1);
+  letter-spacing: 0.1em;
+}
+
+.header__button {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  transition: color 120ms linear, border-color 120ms linear;
+}
+
+.header__button:hover,
+.header__button:focus-visible {
+  color: var(--phosphor);
+  border-color: var(--phosphor-rule);
+}
+
+.header__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.header__dot {
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.header__status--live { color: var(--up); }
+.header__status--loading { color: var(--warn); }
+.header__status--error { color: var(--down); }
+
+.header__clock {
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
+  white-space: nowrap;
+}
+
+/* On a phone the brand shrinks to the logo and the secondary chrome goes. */
+@media (max-width: 720px) {
+  .header__subtitle,
+  .header__status {
+    display: none;
+  }
+
+  .header__title {
+    font-size: var(--step-1);
+    letter-spacing: 0.16em;
+  }
+}
+
+/* The markets drawer button only exists where the sidebar is hidden. */
+@media (min-width: 961px) {
+  .header__button--markets {
+    display: none;
+  }
+}

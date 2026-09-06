@@ -1,0 +1,142 @@
+.markets {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.markets__count {
+  color: var(--text-faint);
+}
+
+.markets__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border);
+}
+
+.markets__prompt {
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
+}
+
+.markets__input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.markets__input::placeholder {
+  color: var(--text-faint);
+}
+
+/* Hide the browser's own clear affordance; it breaks the monochrome look. */
+.markets__input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.markets__list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.markets__placeholder {
+  padding: var(--space-4) var(--space-3);
+  color: var(--text-faint);
+  letter-spacing: 0.14em;
+}
+
+.markets__row {
+  display: grid;
+  /* rank | symbol (flexible) | price+change | volume */
+  grid-template-columns: 2.6em minmax(0, 1fr) auto 4.2em;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-left: 2px solid transparent;
+  transition: background 90ms linear;
+}
+
+.markets__row:hover {
+  background: var(--bg-hover);
+}
+
+.markets__row--active {
+  background: var(--phosphor-ghost);
+  border-left-color: var(--phosphor);
+}
+
+.markets__rank {
+  font-size: var(--step--1);
+  color: var(--text-faint);
+}
+
+.markets__symbol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.markets__base {
+  color: var(--text);
+  letter-spacing: 0.06em;
+}
+
+.markets__row--active .markets__base {
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
+}
+
+.markets__name {
+  font-size: var(--step--1);
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.markets__numbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.markets__price {
+  color: var(--text);
+}
+
+.markets__change {
+  font-size: var(--step--1);
+}
+
+.markets__volume {
+  font-size: var(--step--1);
+  color: var(--text-faint);
+  text-align: right;
+}
+
+/* Volume is the first thing to go when the column runs out of room. */
+@media (max-width: 1200px) and (min-width: 961px) {
+  .markets__row {
+    grid-template-columns: 2.6em minmax(0, 1fr) auto;
+  }
+
+  .markets__volume {
+    display: none;
+  }
+}

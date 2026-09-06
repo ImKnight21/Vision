@@ -1,0 +1,65 @@
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-2) var(--space-3);
+}
+
+.controls__group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: none;
+  flex-wrap: wrap;
+}
+
+.controls__legend {
+  /* A fieldset legend cannot be a flex item, so it is placed inline instead. */
+  float: left;
+  padding: 0 var(--space-2) 0 0;
+  font-size: var(--step--1);
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  line-height: 1.8;
+}
+
+.controls__chip {
+  padding: 0.1rem var(--space-2);
+  border: 1px solid var(--phosphor-rule);
+  font-size: var(--step--1);
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  transition: color 90ms linear, background 90ms linear;
+}
+
+.controls__chip:hover {
+  color: var(--phosphor);
+  background: var(--bg-hover);
+}
+
+.controls__chip--on {
+  color: var(--bg);
+  background: var(--phosphor);
+  border-color: var(--phosphor);
+  text-shadow: none;
+}
+
+/* Interval chips are the primary control; let them scroll rather than wrap
+   into four ragged rows on a narrow phone. */
+@media (max-width: 560px) {
+  .controls {
+    gap: var(--space-2);
+  }
+
+  .controls__group {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .controls__group::-webkit-scrollbar {
+    display: none;
+  }
+}

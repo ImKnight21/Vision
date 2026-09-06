@@ -1,0 +1,68 @@
+.meter {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: var(--border);
+}
+
+.meter__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.meter__label {
+  font-size: var(--step--1);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.meter__readout {
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
+}
+
+.meter__track {
+  position: relative;
+  height: 10px;
+  margin: var(--space-2) 0 var(--space-1);
+  border: 1px solid var(--phosphor-rule);
+  /* Hatching makes the empty part of the track read as a printed scale. */
+  background: repeating-linear-gradient(
+    90deg,
+    var(--phosphor-ghost) 0 1px,
+    transparent 1px 5px
+  );
+}
+
+.meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--phosphor-ghost);
+}
+
+.meter__mark {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--text-faint);
+}
+
+.meter__cursor {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--phosphor);
+  box-shadow: var(--glow-hard);
+}
+
+.meter__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--step--1);
+  color: var(--text-faint);
+  letter-spacing: 0.08em;
+}

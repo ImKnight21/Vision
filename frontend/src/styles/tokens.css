@@ -1,0 +1,92 @@
+/* ============================================================
+   Vision — CRT phosphor design tokens.
+
+   The look is a 1980s financial terminal: a monochrome phosphor
+   tube, one typeface, and colour used only where it carries
+   meaning. Two tube types are offered — P1 green and P3 amber —
+   because that switch is the one piece of chrome a real terminal
+   operator actually had.
+   ============================================================ */
+
+:root {
+  /* --- tube: P1 green (default) --- */
+  --phosphor: #3dff7a;
+  --phosphor-bright: #a8ffc4;
+  --phosphor-dim: #1f8f45;
+  --phosphor-ghost: rgba(61, 255, 122, 0.09);
+  --phosphor-rule: rgba(61, 255, 122, 0.22);
+
+  --bg: #040604;
+  --bg-panel: #070c08;
+  --bg-raise: #0b120d;
+  --bg-hover: rgba(61, 255, 122, 0.07);
+
+  --text: #b7f5c8;
+  --text-dim: #5d8a6a;
+  --text-faint: #34503c;
+
+  /* Semantic colours. Up/down must stay distinguishable without hue
+     alone, so they also differ in brightness. */
+  --up: #3dff7a;
+  --down: #ff5f4d;
+  --warn: #ffc247;
+
+  /* --- type --- */
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", "Cascadia Mono",
+    "Consolas", "Liberation Mono", monospace;
+
+  --step--1: clamp(0.68rem, 0.66rem + 0.1vw, 0.74rem);
+  --step-0: clamp(0.78rem, 0.75rem + 0.15vw, 0.86rem);
+  --step-1: clamp(0.94rem, 0.89rem + 0.25vw, 1.06rem);
+  --step-2: clamp(1.2rem, 1.1rem + 0.5vw, 1.5rem);
+  --step-3: clamp(1.6rem, 1.4rem + 1vw, 2.3rem);
+
+  /* Terminals are dense. The scale is tight on purpose. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2.25rem;
+
+  --radius: 0;            /* CRTs did not have rounded corners */
+  --border: 1px solid var(--phosphor-rule);
+  --glow-soft: 0 0 6px rgba(61, 255, 122, 0.35);
+  --glow-hard: 0 0 12px rgba(61, 255, 122, 0.55);
+
+  --scanline-opacity: 0.35;
+  --header-height: 3.25rem;
+}
+
+/* --- tube: P3 amber --- */
+:root[data-phosphor="amber"] {
+  --phosphor: #ffb340;
+  --phosphor-bright: #ffe0a8;
+  --phosphor-dim: #a06a17;
+  --phosphor-ghost: rgba(255, 179, 64, 0.09);
+  --phosphor-rule: rgba(255, 179, 64, 0.24);
+
+  --bg: #060402;
+  --bg-panel: #0c0805;
+  --bg-raise: #140d06;
+  --bg-hover: rgba(255, 179, 64, 0.07);
+
+  --text: #f5d9a8;
+  --text-dim: #94714a;
+  --text-faint: #57422b;
+
+  --up: #ffd166;
+  --down: #ff6b3d;
+  --warn: #ffe08a;
+
+  --glow-soft: 0 0 6px rgba(255, 179, 64, 0.35);
+  --glow-hard: 0 0 12px rgba(255, 179, 64, 0.55);
+}
+
+/* The tube effects are decoration. Anyone who asked the OS to calm
+   motion down gets a flat, steady screen instead. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --scanline-opacity: 0.12;
+  }
+}

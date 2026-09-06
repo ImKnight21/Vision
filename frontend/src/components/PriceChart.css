@@ -1,0 +1,21 @@
+.chart {
+  position: relative;
+  /* Tall enough to read structure on a phone, taller on a desktop. */
+  height: clamp(260px, 42vh, 460px);
+  background: var(--bg-panel);
+}
+
+.chart__canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.chart__empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--text-faint);
+  letter-spacing: 0.3em;
+}
