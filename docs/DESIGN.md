@@ -93,6 +93,25 @@ of the glyphs it is meant to flatter — which is why the headline price is
 longer tinted by direction: colouring the largest element on screen alarm-red
 over a −0.02% move was noise, not signal.
 
+## Language
+
+Russian and English, switched from the header and stored per browser; the
+choice is mirrored onto `<html lang>`. Every string lives in
+[`frontend/src/i18n/dictionary.ts`](../frontend/src/i18n/dictionary.ts), with
+English as the source of truth and Russian typed as a record over its keys, so a
+missing translation fails the build rather than surfacing as an English label in
+a screenshot.
+
+**Numbers are not localised.** Prices, ratios and percentages keep the
+international format in both languages. A Russian decimal comma sitting beside a
+thousands space reads as two separate numbers in a dense column, and every
+exchange the data comes from uses the international form anyway.
+
+Russian labels run longer than English ones, which is what pushed the header
+past the viewport once the compare and language controls were added. The fix is
+in Responsiveness below: the toggles drop their label prefixes and keep their
+values.
+
 ## Components
 
 | Piece | Note |
@@ -102,7 +121,8 @@ over a −0.02% move was noise, not signal.
 | `.panel__title` | Uppercase, letter-spaced, on a faint phosphor wash. |
 | `StatPanel` | Label / dotted leader / value rows. The leader guides the eye across the gap the way a printed table of contents does. |
 | `Meter` | A hatched track with a glowing cursor, for RSI, drawdown depth and position-in-range. |
-| `PriceChart` | lightweight-charts, reading its palette from the CSS tokens at mount so it follows the tube switch. |
+| `PriceChart` | lightweight-charts, reading its palette from the CSS tokens at mount so it follows the tube switch. Carries the OHLC legend. |
+| `ComparePanel` | Correlation matrix plus a side-by-side stats table. The heatmap tints cells with `color-mix` against the phosphor token, so it follows the tube too. |
 
 ## Responsiveness
 
@@ -112,8 +132,16 @@ Two structural breakpoints, and as few as possible:
 - **≤ 960px** — the sidebar becomes a drawer opened from `[ MARKETS ]` in the
   header. Escape and the scrim both close it; selecting a coin closes it too.
 - **≤ 720px** — the header sheds its subtitle and status pill.
+- **≤ 720px** — the display toggles drop their label prefixes and show only
+  their values (`P1`, `ON`, `RU`). Those words are what push the row past the
+  viewport, and the values still read as settings once seen.
+- **≤ 600px** — the `VISION` wordmark goes; the logo glyph still identifies it.
 - **≤ 560px** — control chips scroll horizontally rather than wrapping into
   ragged rows.
+- **≤ 420px** — the clock goes.
+
+Both comparison tables scroll inside their own `overflow-x` box, so the page
+body never scrolls sideways at any width.
 
 The statistics grid needs no breakpoint at all: `repeat(auto-fit, minmax(17rem,
 1fr))` reflows it from four columns to one on its own.
@@ -128,6 +156,9 @@ The statistics grid needs no breakpoint at all: `repeat(auto-fit, minmax(17rem,
   Russian month abbreviations.
 - **`localStorage` throws, not just returns null**, in private windows and when
   site data is blocked. Every access is wrapped.
+- **The chart legend must not steal the pointer.** It is absolutely positioned
+  over the plot with `pointer-events: none`, otherwise it swallows the crosshair
+  events that drive it.
 - **A child's effects run before its parent's.** The theme hook set
   `data-phosphor` in an effect, so when the tube was switched the chart — a
   child that re-reads its palette from the CSS variables — sampled the *previous*

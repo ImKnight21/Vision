@@ -1,5 +1,7 @@
 import { useClock } from "../hooks/useClock";
 import type { Fx, Phosphor } from "../hooks/useDisplay";
+import { useI18n } from "../i18n/useI18n";
+import type { StringKey } from "../i18n/dictionary";
 import "./Header.css";
 
 interface Props {
@@ -8,13 +10,15 @@ interface Props {
   fx: Fx;
   onToggleFx: () => void;
   onOpenMarkets: () => void;
+  onOpenCompare: () => void;
+  compareOpen: boolean;
   status: "live" | "loading" | "error";
 }
 
-const STATUS_LABEL: Record<Props["status"], string> = {
-  live: "ONLINE",
-  loading: "SYNC",
-  error: "NO LINK",
+const STATUS_KEY: Record<Props["status"], StringKey> = {
+  live: "status.live",
+  loading: "status.loading",
+  error: "status.error",
 };
 
 export function Header({
@@ -23,9 +27,12 @@ export function Header({
   fx,
   onToggleFx,
   onOpenMarkets,
+  onOpenCompare,
+  compareOpen,
   status,
 }: Props) {
   const clock = useClock();
+  const { t, locale, toggleLocale } = useI18n();
 
   return (
     <header className="header">
@@ -34,7 +41,7 @@ export function Header({
           ▚▞
         </span>
         <h1 className="header__title">VISION</h1>
-        <span className="header__subtitle">MARKET TERMINAL</span>
+        <span className="header__subtitle">{t("brand.subtitle")}</span>
       </div>
 
       <div className="header__controls">
@@ -43,7 +50,26 @@ export function Header({
           className="header__button header__button--markets"
           onClick={onOpenMarkets}
         >
-          [ MARKETS ]
+          {t("header.markets")}
+        </button>
+
+        <button
+          type="button"
+          className={`header__button${compareOpen ? " header__button--on" : ""}`}
+          onClick={onOpenCompare}
+          aria-pressed={compareOpen}
+        >
+          {compareOpen ? t("compare.close") : t("compare.open")}
+        </button>
+
+        <button
+          type="button"
+          className="header__button"
+          onClick={toggleLocale}
+          title={t("header.langHint")}
+        >
+          <span className="header__key">{t("header.lang")}:</span>
+          {locale.toUpperCase()}
         </button>
 
         <button
@@ -52,7 +78,8 @@ export function Header({
           onClick={onTogglePhosphor}
           aria-label={`Switch to ${phosphor === "green" ? "amber" : "green"} phosphor`}
         >
-          TUBE:{phosphor === "green" ? "P1" : "P3"}
+          <span className="header__key">{t("header.tube")}:</span>
+          {phosphor === "green" ? "P1" : "P3"}
         </button>
 
         <button
@@ -60,14 +87,15 @@ export function Header({
           className="header__button"
           onClick={onToggleFx}
           aria-pressed={fx === "on"}
-          title="Scanlines, vignette and glow. Turn them off for a flat, maximally legible screen."
+          title={t("header.fxHint")}
         >
-          FX:{fx.toUpperCase()}
+          <span className="header__key">{t("header.fx")}:</span>
+          {fx.toUpperCase()}
         </button>
 
         <span className={`header__status header__status--${status}`}>
           <span className="header__dot" aria-hidden="true" />
-          {STATUS_LABEL[status]}
+          {t(STATUS_KEY[status])}
         </span>
 
         <time className="header__clock" dateTime={clock}>

@@ -1,4 +1,5 @@
 import type { MarketRow, Stats } from "../api/types";
+import { useI18n } from "../i18n/useI18n";
 import { compact, percent, price, shortDate, signClass } from "../lib/format";
 import "./CoinHeader.css";
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function CoinHeader({ symbol, market, stats }: Props) {
+  const { t } = useI18n();
   const last = stats?.price.last ?? market?.price ?? null;
 
   const deltas = [
@@ -24,9 +26,9 @@ export function CoinHeader({ symbol, market, stats }: Props) {
         <div className="coin__names">
           <h2 className="coin__symbol">{symbol}</h2>
           <p className="coin__name">
-            {market?.name ?? "—"}
+            {market?.name ?? "--"}
             {market?.market_cap_rank != null && (
-              <span className="coin__rank">RANK #{market.market_cap_rank}</span>
+              <span className="coin__rank">{t("coin.rank")} #{market.market_cap_rank}</span>
             )}
           </p>
         </div>
@@ -49,17 +51,17 @@ export function CoinHeader({ symbol, market, stats }: Props) {
       </ul>
 
       <dl className="coin__facts">
-        <Fact label="MKT CAP" value={market?.market_cap != null ? `$${compact(market.market_cap)}` : "——"} />
-        <Fact label="VOL 24H" value={market?.volume_24h != null ? `$${compact(market.volume_24h)}` : "——"} />
-        <Fact label="ATH" value={market?.ath != null ? `$${price(market.ath)}` : "——"} />
+        <Fact label={t("coin.marketCap")} value={market?.market_cap != null ? `$${compact(market.market_cap)}` : "--"} />
+        <Fact label={t("coin.volume24h")} value={market?.volume_24h != null ? `$${compact(market.volume_24h)}` : "--"} />
+        <Fact label={t("coin.ath")} value={market?.ath != null ? `$${price(market.ath)}` : "--"} />
         <Fact
-          label="FROM ATH"
+          label={t("coin.fromAth")}
           value={percent(market?.ath_change)}
           tone={signClass(market?.ath_change)}
         />
-        <Fact label="BARS" value={stats ? String(stats.bars) : "——"} />
-        <Fact label="SINCE" value={shortDate(stats?.period_start)} />
-        <Fact label="FEED" value={(stats?.source ?? market?.source ?? "—").toUpperCase()} />
+        <Fact label={t("coin.bars")} value={stats ? String(stats.bars) : "--"} />
+        <Fact label={t("coin.since")} value={shortDate(stats?.period_start)} />
+        <Fact label={t("coin.feed")} value={(stats?.source ?? market?.source ?? "--").toUpperCase()} />
       </dl>
     </section>
   );

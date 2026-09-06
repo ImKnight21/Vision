@@ -54,7 +54,7 @@ so both halves run on one origin.
 Tests:
 
 ```bash
-cd backend && python -m pytest      # 35 tests, no network required
+cd backend && python -m pytest      # 62 tests, no network required
 cd frontend && npm run typecheck
 ```
 
@@ -71,6 +71,7 @@ All endpoints are `GET` under `/api`. Interactive docs at
 | `/ohlcv/{symbol}`    | Raw candles. |
 | `/stats/{symbol}`    | The full statistical profile. |
 | `/overview/{symbol}` | Candles **and** statistics in one round trip — what the UI uses. |
+| `/compare?symbols=` | Correlation matrix and headline stats across 2 to 8 coins. |
 
 Query parameters: `interval` (default `1d`), `limit` (bars, 30–1000).
 
@@ -99,6 +100,15 @@ Each statistic and how to read it is documented in
   assumption to survive contact with reality.
 - **Distribution** — skew and excess kurtosis, which say whether the big moves
   are crashes or melt-ups and how much fatter the tails are than a bell curve.
+- **Regime** — the Hurst exponent, autocorrelation and trend strength, which
+  say whether moves persist or get given back. This is what decides between
+  trading a breakout and fading it.
+- **Duration** — the Ulcer index and time under water. Max drawdown reports the
+  worst moment; these report what holding it actually felt like.
+- **Liquidity** — Amihud price impact per $1M, volume z-score and trend. For a
+  thin alt this is often the whole risk.
+- **Versus Bitcoin** — correlation, beta, Jensen's alpha, R-squared and up/down
+  capture, plus a correlation matrix across up to eight coins.
 
 ## Layout
 
@@ -124,6 +134,10 @@ docs/
 A monochrome phosphor tube: one monospace typeface, no rounded corners, colour
 used only where it carries meaning. Two tube types ship — P1 green and P3 amber
 — toggled from the header and remembered per browser.
+
+The interface is available in Russian and English, switched from the header and
+remembered per browser. Numbers deliberately stay in the international format in
+both, because that is what every exchange shows.
 
 Legibility outranks the aesthetic. Every text colour is measured against WCAG AA
 *through* the scanline overlay, the typeface (JetBrains Mono, slashed zero) is

@@ -1,4 +1,4 @@
-import type { IntervalOption, MarketRow, Overview } from "./types";
+import type { Comparison, IntervalOption, MarketRow, Overview } from "./types";
 
 /** In dev the Vite proxy serves /api; in production set VITE_API_BASE_URL. */
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -42,6 +42,13 @@ export const api = {
   overview: (symbol: string, interval: string, limit = 500, signal?: AbortSignal) =>
     request<Overview>(
       `/api/overview/${encodeURIComponent(symbol)}?interval=${interval}&limit=${limit}`,
+      signal,
+    ),
+
+  compare: (symbols: string[], interval: string, limit = 500, signal?: AbortSignal) =>
+    request<Comparison>(
+      `/api/compare?symbols=${encodeURIComponent(symbols.join(","))}` +
+        `&interval=${interval}&limit=${limit}`,
       signal,
     ),
 

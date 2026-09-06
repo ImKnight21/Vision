@@ -10,6 +10,68 @@
   inset: 0;
 }
 
+/* The legend floats over the plot rather than taking a row of its own: the
+   chart's top margin is reserved for it, so nothing is covered. */
+.chart__legend {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-3);
+  right: var(--space-3);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  pointer-events: none;
+}
+
+.chart__field {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.chart__field-label {
+  font-size: var(--step--1);
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+}
+
+.chart__field-value {
+  margin: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+.chart__live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--step--1);
+  letter-spacing: 0.14em;
+  color: var(--phosphor);
+}
+
+/* The one pulsing element in the interface, and it earns it: this bar is
+   genuinely still changing. */
+.chart__live-dot {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  box-shadow: var(--glow-soft);
+  animation: chart-pulse 2s ease-in-out infinite;
+}
+
+@keyframes chart-pulse {
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart__live-dot { animation: none; }
+}
+
 .chart__empty {
   position: absolute;
   inset: 0;
@@ -18,4 +80,13 @@
   margin: 0;
   color: var(--text-faint);
   letter-spacing: 0.3em;
+}
+
+/* On a narrow screen the legend would wrap to three rows and cover the plot;
+   volume is the field that carries least in that space. */
+@media (max-width: 560px) {
+  .chart__legend {
+    gap: var(--space-1) var(--space-2);
+    font-size: var(--step--1);
+  }
 }

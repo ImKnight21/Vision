@@ -69,3 +69,15 @@ export function usePhosphor(): [Phosphor, () => void] {
 export function useCrtEffects(): [Fx, () => void] {
   return usePersistedAttribute<Fx>("vision.fx", "data-fx", ["on", "off"]);
 }
+
+
+/**
+ * Interface language, mirrored onto <html lang> so screen readers and the
+ * browser's own translation prompt see the right value.
+ *
+ * Russian is the default because that is the audience this build was written
+ * for; the switch is one click either way.
+ */
+export function useLocale(): ["ru" | "en", () => void] {
+  return usePersistedAttribute<"ru" | "en">("vision.locale", "lang", ["ru", "en"]);
+}

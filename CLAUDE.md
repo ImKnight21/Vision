@@ -20,7 +20,7 @@ The dev server binds `localhost`, which resolves to IPv6 on Windows —
 ## Check it
 
 ```bash
-cd backend  && .venv/Scripts/python.exe -m pytest   # 35 tests, no network
+cd backend  && .venv/Scripts/python.exe -m pytest   # 62 tests, no network
 cd frontend && npm run typecheck && npm run build
 ```
 
@@ -72,6 +72,19 @@ would otherwise re-read the previous theme's palette. See
   one key collapse to a single upstream call.
 - `frontend/src/api/types.ts` — mirrors the backend payload by hand. Change the
   Python schema and this file together.
+- `frontend/src/i18n/dictionary.ts` — every UI string, English and Russian.
+  English is the source of truth and Russian is typed as a record over its keys,
+  so a missing translation is a compile error. **No user-visible string belongs
+  anywhere else.**
+
+**Em dashes are banned in user-visible text.** They are the clearest tell of
+generated copy and they render inconsistently in a monospace column. Use a
+period, a comma, a colon, or `--`. Code comments are exempt.
+
+**The dev server caches CSS by content.** If a stylesheet's rules stop applying
+after an overwrite, Vite is serving an empty module for it (check
+`curl localhost:5173/src/.../X.css`); change the file's content to invalidate it.
+Restarting and clearing `node_modules/.vite` does not help.
 
 ## Data sources
 

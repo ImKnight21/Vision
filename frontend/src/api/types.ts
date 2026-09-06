@@ -85,7 +85,35 @@ export interface Stats {
     cvar_95: number | null;
     var_99: number | null;
     cvar_99: number | null;
+    ulcer_index: number | null;
+    underwater_share: number | null;
+    underwater_longest_days: number | null;
+    underwater_current_days: number | null;
+    recovery_factor: number | null;
+    tail_ratio: number | null;
+    omega: number | null;
+    gain_to_pain: number | null;
   };
+  regime: {
+    /** 0.5 is a random walk; above trends, below mean-reverts. */
+    hurst: number | null;
+    autocorrelation: number | null;
+    vol_of_vol: number | null;
+    /** Where current volatility sits in this coin's own history, 0..1. */
+    vol_percentile: number | null;
+    trend_strength: number | null;
+    trend_change: number | null;
+  };
+  liquidity: {
+    /** Fractional price move per $1M of volume. */
+    amihud: number | null;
+    volume_zscore: number | null;
+    volume_trend: number | null;
+    dollar_volume_median: number | null;
+    dollar_volume_min: number | null;
+  };
+  /** Null when the coin is itself the benchmark, or the benchmark failed. */
+  relative: RelativeStats | null;
   distribution: {
     skew: number | null;
     kurtosis: number | null;
@@ -105,6 +133,43 @@ export interface Stats {
     bollinger_width: number | null;
     percent_b: number | null;
   };
+}
+
+export interface RelativeStats {
+  benchmark: string;
+  bars: number;
+  correlation: number | null;
+  beta: number | null;
+  alpha: number | null;
+  r_squared: number | null;
+  tracking_error: number | null;
+  up_capture: number | null;
+  down_capture: number | null;
+  relative_return: number | null;
+}
+
+export interface CompareRow {
+  symbol: string;
+  last: number | null;
+  total_return: number | null;
+  volatility_30d: number | null;
+  sharpe: number | null;
+  max_drawdown: number | null;
+  hurst: number | null;
+  beta: number | null;
+  correlation: number | null;
+  alpha: number | null;
+}
+
+export interface Comparison {
+  interval: string;
+  benchmark: string | null;
+  failed: string[];
+  rows: CompareRow[];
+  symbols: string[];
+  bars: number;
+  /** Square matrix in `symbols` order; null when there was too little overlap. */
+  matrix: (number | null)[][] | null;
 }
 
 export interface Overview {

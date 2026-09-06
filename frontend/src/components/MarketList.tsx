@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import type { MarketRow } from "../api/types";
+import { useI18n } from "../i18n/useI18n";
 import { compact, percent, price, signClass } from "../lib/format";
 import "./MarketList.css";
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function MarketList({ markets, selected, onSelect, loading }: Props) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   // The list is long; deferring keeps typing responsive while it re-filters.
   const deferredQuery = useDeferredValue(query);
@@ -26,7 +28,7 @@ export function MarketList({ markets, selected, onSelect, loading }: Props) {
   return (
     <section className="markets panel" aria-label="Markets">
       <div className="panel__title">
-        <span>MARKETS</span>
+        <span>{t("markets.title")}</span>
         <span className="markets__count">{visible.length}</span>
       </div>
 
@@ -39,8 +41,8 @@ export function MarketList({ markets, selected, onSelect, loading }: Props) {
           className="markets__input"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="FILTER SYMBOL"
-          aria-label="Filter markets"
+          placeholder={t("markets.filter")}
+          aria-label={t("markets.filterLabel")}
           autoComplete="off"
           spellCheck={false}
         />
@@ -48,10 +50,10 @@ export function MarketList({ markets, selected, onSelect, loading }: Props) {
 
       <ol className="markets__list">
         {loading && markets.length === 0 && (
-          <li className="markets__placeholder">LOADING FEED…</li>
+          <li className="markets__placeholder">{t("markets.loading")}</li>
         )}
         {!loading && visible.length === 0 && (
-          <li className="markets__placeholder">NO MATCH</li>
+          <li className="markets__placeholder">{t("markets.empty")}</li>
         )}
 
         {visible.map((row) => (
@@ -63,7 +65,7 @@ export function MarketList({ markets, selected, onSelect, loading }: Props) {
               aria-current={row.symbol === selected}
             >
               <span className="markets__rank">
-                {row.market_cap_rank ? String(row.market_cap_rank).padStart(3, "0") : "———"}
+                {row.market_cap_rank ? String(row.market_cap_rank).padStart(3, "0") : "---"}
               </span>
               <span className="markets__symbol">
                 <span className="markets__base">{row.base}</span>
@@ -75,7 +77,7 @@ export function MarketList({ markets, selected, onSelect, loading }: Props) {
                   {percent(row.change_24h)}
                 </span>
               </span>
-              <span className="markets__volume" title="24h quote volume">
+              <span className="markets__volume" title={t("markets.volumeHint")}>
                 {compact(row.volume_24h)}
               </span>
             </button>

@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 
-from app.analytics import indicators, risk, volatility
+from app.analytics import indicators, liquidity, regime, risk, volatility
 from app.analytics.returns import INTERVAL_SECONDS, cagr, total_return
 
 # Lookbacks are expressed in calendar days and converted to bars, so "30d
@@ -15,8 +15,12 @@ from app.analytics.returns import INTERVAL_SECONDS, cagr, total_return
 WINDOW_DAYS: tuple[int, ...] = (7, 30, 90)
 
 
-def _clean(value: Any) -> Any:
-    """NaN and infinity are not valid JSON; send null instead."""
+def json_safe(value: Any) -> Any:
+    """NaN and infinity are not valid JSON; send null instead.
+
+    Public because the comparison endpoint assembles its own rows and needs the
+    same guarantee.
+    """
     if value is None:
         return None
     if isinstance(value, (int, str, bool)):
@@ -27,7 +31,7 @@ def _clean(value: Any) -> Any:
 
 def _last(series: pd.Series) -> float | None:
     series = series.dropna()
-    return _clean(series.iloc[-1]) if len(series) else None
+    return json_safe(series.iloc[-1]) if len(series) else None
 
 
 def bars_for_days(days: int, interval: str) -> int:
@@ -43,7 +47,14 @@ def _change_over(close: pd.Series, days: int, interval: str) -> float | None:
     past = float(close.iloc[-1 - bars])
     if past <= 0:
         return None
-    return _clean(float(close.iloc[-1]) / past - 1.0)
+    return json_safe(float(close.iloc[-1]) / past - 1.0)
+
+
+def bars_to_days(bars: int | None, interval: str) -> float | None:
+    """Express a bar count as calendar days, which is how durations are read."""
+    if bars is None:
+        return None
+    return round(bars * INTERVAL_SECONDS[interval] / 86_400, 2)
 
 
 def _windowed(fn, *args, interval: str, **kwargs) -> dict[str, float | None]:
@@ -55,12 +66,12 @@ def _windowed(fn, *args, interval: str, **kwargs) -> dict[str, float | None]:
         # Demand the full window: a "90d" number built from 12 bars would be
         # labelled honestly but read as if it carried the same weight.
         out[f"{days}d"] = (
-            _clean(fn(*args, interval, window=bars, **kwargs))
+            json_safe(fn(*args, interval, window=bars, **kwargs))
             if series_len >= bars
             else None
         )
     # An all-history figure is always available and never misleading.
-    out["all"] = _clean(fn(*args, interval, window=None, **kwargs))
+    out["all"] = json_safe(fn(*args, interval, window=None, **kwargs))
     return out
 
 
@@ -74,6 +85,8 @@ def build_summary(frame: pd.DataFrame, interval: str, symbol: str) -> dict[str, 
     bars = len(frame)
 
     drawdown = risk.analyse_drawdown(close)
+    underwater = risk.time_under_water(close)
+    dollar_volume = liquidity.dollar_volume_stats(frame)
     bands = indicators.bollinger(close)
 
     return {
@@ -83,7 +96,7 @@ def build_summary(frame: pd.DataFrame, interval: str, symbol: str) -> dict[str, 
         "period_start": frame.index[0].isoformat() if bars else None,
         "period_end": frame.index[-1].isoformat() if bars else None,
         "price": {
-            "last": _clean(close.iloc[-1]) if bars else None,
+            "last": json_safe(close.iloc[-1]) if bars else None,
             "change_1d": _change_over(close, 1, interval),
             "change_7d": _change_over(close, 7, interval),
             "change_30d": _change_over(close, 30, interval),
@@ -96,8 +109,8 @@ def build_summary(frame: pd.DataFrame, interval: str, symbol: str) -> dict[str, 
             },
         },
         "returns": {
-            "total": _clean(total_return(close)),
-            "cagr": _clean(cagr(close, interval)),
+            "total": json_safe(total_return(close)),
+            "cagr": json_safe(cagr(close, interval)),
         },
         "volatility": {
             # Annualised fractions: 0.65 means 65% a year.
@@ -107,23 +120,49 @@ def build_summary(frame: pd.DataFrame, interval: str, symbol: str) -> dict[str, 
             "rogers_satchell": _windowed(
                 volatility.rogers_satchell, frame, interval=interval
             ),
-            "ewma": _clean(volatility.ewma(close, interval)),
+            "ewma": json_safe(volatility.ewma(close, interval)),
         },
         "risk": {
-            "sharpe": _clean(risk.sharpe_ratio(close, interval)),
-            "sortino": _clean(risk.sortino_ratio(close, interval)),
-            "calmar": _clean(risk.calmar_ratio(close, interval)),
-            "max_drawdown": _clean(drawdown.max_drawdown),
-            "current_drawdown": _clean(drawdown.current_drawdown),
+            "sharpe": json_safe(risk.sharpe_ratio(close, interval)),
+            "sortino": json_safe(risk.sortino_ratio(close, interval)),
+            "calmar": json_safe(risk.calmar_ratio(close, interval)),
+            "max_drawdown": json_safe(drawdown.max_drawdown),
+            "current_drawdown": json_safe(drawdown.current_drawdown),
             "drawdown_peak_at": drawdown.peak_at.isoformat() if drawdown.peak_at is not None else None,
             "drawdown_trough_at": drawdown.trough_at.isoformat() if drawdown.trough_at is not None else None,
             "drawdown_recovered_at": drawdown.recovered_at.isoformat() if drawdown.recovered_at is not None else None,
-            "var_95": _clean(risk.value_at_risk(close, 0.95)),
-            "cvar_95": _clean(risk.conditional_value_at_risk(close, 0.95)),
-            "var_99": _clean(risk.value_at_risk(close, 0.99)),
-            "cvar_99": _clean(risk.conditional_value_at_risk(close, 0.99)),
+            "var_95": json_safe(risk.value_at_risk(close, 0.95)),
+            "cvar_95": json_safe(risk.conditional_value_at_risk(close, 0.95)),
+            "var_99": json_safe(risk.value_at_risk(close, 0.99)),
+            "cvar_99": json_safe(risk.conditional_value_at_risk(close, 0.99)),
+            # Depth alone undersells a slump that lasted a year, so these
+            # measure how long the asset spent below its high as well.
+            "ulcer_index": json_safe(risk.ulcer_index(close)),
+            "underwater_share": json_safe(underwater["share"]),
+            "underwater_longest_days": bars_to_days(underwater["longest_bars"], interval),
+            "underwater_current_days": bars_to_days(underwater["current_bars"], interval),
+            "recovery_factor": json_safe(risk.recovery_factor(close)),
+            "tail_ratio": json_safe(risk.tail_ratio(close)),
+            "omega": json_safe(risk.omega_ratio(close)),
+            "gain_to_pain": json_safe(risk.gain_to_pain(close)),
         },
-        "distribution": {k: _clean(v) for k, v in risk.return_distribution(close).items()},
+        "regime": {
+            # Above 0.5 trends, below 0.5 mean-reverts, 0.5 is a random walk.
+            "hurst": json_safe(regime.hurst_exponent(close)),
+            "autocorrelation": json_safe(regime.autocorrelation(close)),
+            "vol_of_vol": json_safe(regime.volatility_of_volatility(close, interval)),
+            "vol_percentile": json_safe(regime.volatility_percentile(close, interval)),
+            "trend_strength": json_safe(regime.trend_strength(close)),
+            "trend_change": json_safe(regime.trend_change(close)),
+        },
+        "liquidity": {
+            "amihud": json_safe(liquidity.amihud_illiquidity(frame)),
+            "volume_zscore": json_safe(liquidity.volume_zscore(frame)),
+            "volume_trend": json_safe(liquidity.volume_trend(frame)),
+            "dollar_volume_median": json_safe(dollar_volume["median"]),
+            "dollar_volume_min": json_safe(dollar_volume["min"]),
+        },
+        "distribution": {k: json_safe(v) for k, v in risk.return_distribution(close).items()},
         "indicators": {
             "rsi_14": _last(indicators.rsi(close)),
             "atr_14": _last(indicators.atr(frame)),

@@ -1,7 +1,9 @@
 /** Display helpers. Every function tolerates null so panels can render
  *  a placeholder rather than crashing on a statistic we could not compute. */
 
-const DASH = "——";
+// Two hyphens, not an em dash: the dash characters render inconsistently in a
+// monospace column and the design system bans them outright.
+const DASH = "--";
 
 /** Crypto prices span nine orders of magnitude, so precision has to adapt. */
 export function price(value: number | null | undefined): string {

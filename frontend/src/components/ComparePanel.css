@@ -1,0 +1,133 @@
+.compare {
+  display: flex;
+  flex-direction: column;
+}
+
+.compare__note {
+  color: var(--text-faint);
+  font-size: var(--step--1);
+}
+
+.compare__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border);
+}
+
+.compare__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-2);
+  border: 1px solid var(--rule);
+  font-size: var(--step--1);
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.compare__remove {
+  padding: 0 0.15rem;
+  color: var(--text-faint);
+  line-height: 1;
+}
+
+.compare__remove:hover,
+.compare__remove:focus-visible {
+  color: var(--down);
+}
+
+.compare__add {
+  padding: 0.1rem var(--space-2);
+  background: var(--bg-raise);
+  border: 1px solid var(--rule);
+  color: var(--phosphor);
+  font: inherit;
+  font-size: var(--step--1);
+  letter-spacing: 0.08em;
+}
+
+.compare__message {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--warn);
+  font-size: var(--step--1);
+}
+
+/* Both tables are wide by nature. They scroll inside their own box so the page
+   itself never scrolls sideways. */
+.compare__scroll {
+  overflow-x: auto;
+  padding: var(--space-3);
+  border-bottom: var(--border);
+}
+
+.compare__scroll:last-child {
+  border-bottom: none;
+}
+
+.compare__table {
+  width: 100%;
+}
+
+/* The matrix sizes to its contents. Stretching it to the panel width turns a
+   correlation grid into a few enormous cells with no shape to read. */
+.compare__matrix {
+  width: auto;
+}
+
+.compare__matrix,
+.compare__table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums slashed-zero;
+  white-space: nowrap;
+}
+
+.compare__matrix th,
+.compare__matrix td,
+.compare__table th,
+.compare__table td {
+  padding: var(--space-1) var(--space-3);
+  text-align: right;
+  font-weight: 400;
+}
+
+.compare__matrix thead th,
+.compare__table thead th {
+  font-size: var(--step--1);
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  border-bottom: var(--border);
+}
+
+.compare__matrix tbody th,
+.compare__table tbody th {
+  text-align: left;
+  color: var(--phosphor);
+  letter-spacing: 0.08em;
+}
+
+.compare__matrix td {
+  color: var(--text);
+  /* A hairline grid is what makes a matrix readable as a grid. */
+  border: 1px solid var(--rule-faint);
+  text-align: center;
+  min-width: 3.6rem;
+}
+
+/* The diagonal is always 1.00 and carries no information; keep it quiet so the
+   eye goes to the off-diagonal cells that do. */
+.compare__diagonal {
+  color: var(--text-faint);
+}
+
+.compare__current th,
+.compare__current td {
+  background: var(--phosphor-ghost);
+}
+
+.compare__table tbody tr:hover td {
+  background: var(--bg-hover);
+}

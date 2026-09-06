@@ -19,7 +19,7 @@ export function Meter({ label, position, leftLabel, rightLabel, hint, marks = []
       <div className="meter__head">
         <span className="meter__label">{label}</span>
         <span className="meter__readout">
-          {clamped == null ? "——" : `${(clamped * 100).toFixed(0)}%`}
+          {clamped == null ? "--" : `${(clamped * 100).toFixed(0)}%`}
         </span>
       </div>
 

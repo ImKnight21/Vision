@@ -11,8 +11,9 @@ import logging
 
 import pandas as pd
 
-from app.analytics import build_summary
-from app.analytics.returns import INTERVAL_SECONDS
+from app.analytics import build_summary, regime, relative, risk, volatility
+from app.analytics.returns import INTERVAL_SECONDS, total_return
+from app.analytics.summary import bars_for_days, json_safe
 from app.cache import cache
 from app.config import get_settings
 from app.sources import binance, coingecko, cryptocompare
@@ -21,6 +22,14 @@ from app.sources.base import UpstreamError
 log = logging.getLogger("vision.service")
 
 VALID_INTERVALS = frozenset(INTERVAL_SECONDS)
+
+# Almost every alt is, statistically, a leveraged position on BTC, so BTC is
+# the benchmark everything is measured against by default.
+BENCHMARK = "BTCUSDT"
+
+# Comparing many symbols means one upstream call each; cap it so a crafted
+# request cannot fan out into a hundred fetches.
+MAX_COMPARE_SYMBOLS = 8
 
 
 async def get_markets(limit: int = 100) -> list[dict]:
@@ -128,10 +137,121 @@ async def get_ohlcv(symbol: str, interval: str, limit: int = 500) -> pd.DataFram
 
 async def get_summary(symbol: str, interval: str, limit: int = 500) -> dict:
     """Every statistic for one pair, plus which provider the candles came from."""
+    return (await get_overview(symbol, interval, limit))["stats"]
+
+
+async def _relative_to_benchmark(
+    frame: pd.DataFrame, symbol: str, interval: str, limit: int
+) -> dict | None:
+    """Beta, correlation and capture against BTC. None when it is meaningless.
+
+    A failure here must not take the whole profile down: the relative block is
+    an extra lens on the asset, not the asset's own statistics.
+    """
+    if symbol == BENCHMARK:
+        return None
+    try:
+        benchmark = await get_ohlcv(BENCHMARK, interval, limit)
+    except (UpstreamError, ValueError) as exc:
+        log.warning("benchmark unavailable for %s: %s", symbol, exc)
+        return None
+
+    return relative.compare(
+        frame["close"], benchmark["close"], interval, benchmark_name=BENCHMARK
+    ).to_dict()
+
+
+async def get_overview(symbol: str, interval: str, limit: int = 500) -> dict:
+    """Candles and statistics from the same fetch.
+
+    One round trip for the client, and both halves are guaranteed to describe
+    the identical set of bars.
+    """
     frame = await get_ohlcv(symbol, interval, limit)
     summary = build_summary(frame, interval, symbol.upper())
     summary["source"] = frame.attrs.get("source", "unknown")
-    return summary
+    summary["relative"] = await _relative_to_benchmark(
+        frame, symbol.upper(), interval, limit
+    )
+    return {
+        "symbol": symbol.upper(),
+        "interval": interval,
+        "source": summary["source"],
+        "candles": frame_to_candles(frame),
+        "stats": summary,
+    }
+
+
+async def get_comparison(
+    symbols: list[str], interval: str, limit: int = 500
+) -> dict:
+    """Correlation matrix plus headline stats for several coins side by side.
+
+    Symbols that no source can serve are reported in `failed` rather than
+    failing the request: one dead ticker should not blank the comparison.
+    """
+    if interval not in VALID_INTERVALS:
+        raise ValueError(f"unsupported interval {interval!r}")
+
+    wanted = list(dict.fromkeys(s.upper() for s in symbols if s.strip()))[
+        :MAX_COMPARE_SYMBOLS
+    ]
+    if len(wanted) < 2:
+        raise ValueError("comparison needs at least two symbols")
+
+    frames = await asyncio.gather(
+        *(get_ohlcv(s, interval, limit) for s in wanted), return_exceptions=True
+    )
+
+    closes: dict[str, pd.Series] = {}
+    failed: list[str] = []
+    for symbol, result in zip(wanted, frames):
+        if isinstance(result, BaseException):
+            log.warning("comparison dropped %s: %s", symbol, result)
+            failed.append(symbol)
+        else:
+            closes[symbol] = result["close"]
+
+    if len(closes) < 2:
+        raise UpstreamError("vision", "fewer than two symbols could be loaded")
+
+    benchmark = closes.get(BENCHMARK)
+    window_30d = bars_for_days(30, interval)
+
+    rows = []
+    for symbol, close in closes.items():
+        # Only close-based statistics here: the comparison holds price series,
+        # not full bars, so the range estimators and liquidity measures have
+        # nothing to read and are deliberately absent rather than faked.
+        row = {
+            "symbol": symbol,
+            "last": json_safe(close.iloc[-1]) if len(close) else None,
+            "total_return": json_safe(total_return(close)),
+            "volatility_30d": json_safe(
+                volatility.close_to_close(close, interval, window_30d)
+            ),
+            "sharpe": json_safe(risk.sharpe_ratio(close, interval)),
+            "max_drawdown": json_safe(risk.analyse_drawdown(close).max_drawdown),
+            "hurst": json_safe(regime.hurst_exponent(close)),
+        }
+        if benchmark is not None and symbol != BENCHMARK:
+            stats = relative.compare(close, benchmark, interval, BENCHMARK)
+            row |= {
+                "beta": stats.beta,
+                "correlation": stats.correlation,
+                "alpha": stats.alpha,
+            }
+        else:
+            row |= {"beta": None, "correlation": None, "alpha": None}
+        rows.append(row)
+
+    return {
+        "interval": interval,
+        "benchmark": BENCHMARK if benchmark is not None else None,
+        "failed": failed,
+        "rows": rows,
+        **relative.correlation_matrix(closes),
+    }
 
 
 def frame_to_candles(frame: pd.DataFrame) -> list[dict]:

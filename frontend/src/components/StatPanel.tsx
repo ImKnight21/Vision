@@ -30,7 +30,7 @@ export function StatPanel({ title, note, items, children }: Props) {
           <div className="stat__row" key={item.label} title={item.hint}>
             <dt className="stat__label">
               {item.label}
-              {item.hint && <span className="visually-hidden"> — {item.hint}</span>}
+              {item.hint && <span className="visually-hidden">: {item.hint}</span>}
             </dt>
             {/* The leader is decorative: it guides the eye across the gap the
                 way a printed table of contents does. */}

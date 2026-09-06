@@ -187,3 +187,171 @@ information than their parts:
   based on typical volatility will be wrong on the day it matters.
 - **Deep current drawdown, `RECOVERED: NOT YET`** — the window's high is not a
   level this asset has proved it can reclaim.
+- **Hurst above 0.5 with high trend strength** — a real, orderly trend, so
+  continuation is the base case rather than the hopeful one.
+- **Volatility percentile above 90 with high vol-of-vol** — the asset is at the
+  top of its own range *and* prone to regime switches. Whatever size the current
+  volatility justifies, it will not justify it for long.
+- **Beta above 1 with down-capture above up-capture** — the coin takes more of
+  BTC's falls than of its rises. That combination is what a negative alpha looks
+  like before it shows up in the alpha figure.
+- **Rising price, volume trend below 1, volume z-score negative** — the move is
+  running on fewer participants each bar.
+- **High tail ratio with negative skew** — rare large gains inside a
+  distribution that still loses more often than it wins. Both facts are true and
+  neither alone describes it.
+
+---
+
+## Regime: does it trend or revert?
+
+Volatility says how far price moves. These say whether the moves tend to
+continue or be given back, which decides whether a breakout or a fade is the
+sensible read.
+
+### Hurst exponent
+
+Estimated by rescaled-range (R/S) analysis over log-spaced windows, fitted as a
+slope in log-log space.
+
+- **0.5** is a random walk.
+- **Above 0.5** the series is persistent: moves follow through, so breakouts
+  are worth more and mean-reversion trades are fighting the tape.
+- **Below 0.5** it is anti-persistent: moves get given back, so fades work and
+  breakouts fail more often than a coin flip.
+
+Crypto majors on daily bars usually sit just above 0.5. Needs at least 128
+bars; below that it returns null rather than a number built from noise.
+
+### Autocorrelation (lag 1)
+
+Correlation of each bar's return with the previous one. Positive means
+momentum, negative means reversal. The magnitude is almost always small; **the
+sign is the signal**, not the size.
+
+### Volatility percentile
+
+Where the current 30-bar volatility sits inside the distribution of this
+asset's own past 30-bar volatilities, 0 to 1.
+
+This is the context an absolute figure cannot give. "60% annualised" means
+nothing alone. 60% at the 95th percentile means the asset is about as agitated
+as it has ever been; 60% at the 20th means this is a quiet spell for it.
+
+### Volatility of volatility
+
+Coefficient of variation of the rolling volatility series. High values mean the
+asset switches between calm and violent regimes rather than holding one level,
+so any single volatility number has a short shelf life and position sizing off
+it will be stale quickly.
+
+### Trend strength and trend change
+
+`trend_strength` is the R-squared of a straight line fitted through log price
+over the last 50 bars: how *orderly* the move is, not which way it went. High
+means a clean directional run; low means chop that happened to drift.
+
+`trend_change` is how far that fitted line travelled across the window, as a
+fraction. It is deliberately **not annualised**: compounding a 50-bar drift out
+to a year produces figures like +1300% that are arithmetically correct and
+analytically worthless.
+
+Read them together. A large `trend_change` with a low `trend_strength` is not a
+trend, it is noise with a slope.
+
+---
+
+## Duration: how long, not just how deep
+
+Max drawdown reports the worst moment. These report what the whole experience
+was like, which is what determines whether a position was actually holdable.
+
+| Measure | Reads as |
+| ------- | -------- |
+| **Ulcer index** | Root-mean-square drawdown. Depth and duration in one number: a long shallow slump and a brief violent crash stop looking alike. |
+| **Time under water** | Share of bars spent below a previous high. An asset can post a fine annual return and have been underwater 95% of the time. |
+| **Longest slump** | The longest unbroken stretch below a previous high, in days. |
+| **Recovery factor** | Window return divided by the depth of the worst drawdown. Like Calmar but using the raw window return, so a short sample does not distort it. |
+
+---
+
+## Payoff asymmetry
+
+Skew hints at asymmetry; these state it in units you can act on.
+
+- **Tail ratio** - the 95th percentile gain over the absolute 5th percentile
+  loss. Above 1 means the good outliers were bigger than the bad ones.
+- **Omega** - total gains above zero divided by total losses below it. It uses
+  the entire distribution rather than its first two moments, so unlike Sharpe
+  it makes no normality assumption. For crypto that matters.
+- **Gain to pain** - the sum of all returns over the sum of the losing ones. A
+  blunt read on whether the winners paid for the losers.
+
+---
+
+## Liquidity
+
+Volatility describes the price you see; liquidity describes whether you could
+have traded at it. For a large cap the distinction rarely bites. For a thin alt
+it is often the whole risk, and a returns-only view misses it entirely.
+
+- **Impact per $1M** (Amihud) - the fractional price move caused by a million
+  dollars of volume. `0.0001` means $1M shifts the price about 0.01%. Higher
+  means thinner. Compare it across coins, never against an absolute threshold.
+- **Volume z-score** - how unusual the latest bar's turnover is, in standard
+  deviations. Above 2 is a spike, which corroborates a price move. **A breakout
+  on below-average volume is the one to distrust.**
+- **Volume trend** - recent turnover over its longer-run average. Sustained
+  readings below 1 during a price rise mean the move is running on fewer and
+  fewer participants.
+- **Median and thinnest-day volume** - the median describes an ordinary day (a
+  mean would let one listing-day spike speak for the month); the minimum is the
+  liquidity you can actually rely on.
+
+---
+
+## Relative to Bitcoin
+
+Most alts are, statistically, leveraged bets on BTC with extra noise. These
+separate the part of a move that was simply the market from the part that
+belonged to the coin, which is the difference between "it went up" and "it
+outperformed". All are computed over the bars the two series **share**, so a
+short history shortens the comparison rather than misaligning it.
+
+| Measure | Reads as |
+| ------- | -------- |
+| **Correlation** | How closely the coin moves with BTC. Near 1 means it offers almost no diversification. |
+| **Beta** | Move per 1% move in BTC. Above 1 amplifies the market in both directions. |
+| **Alpha** | Jensen's alpha, annualised: the return left over once the BTC exposure beta describes has been paid for. Negative means the coin did not earn the risk it carried. |
+| **R-squared** | Share of the coin's movement explained by BTC. High means it is essentially a leveraged BTC position wearing a different ticker. |
+| **Up / down capture** | Share of BTC's move captured on its up and down bars. Up above 1 with down below 1 is the rare good shape. Both far above 1 is simply leverage. |
+| **Tracking error** | How far the coin's path strays from BTC's, annualised. |
+
+The comparison view extends this to a **correlation matrix** across up to eight
+coins. Correlations there are computed over the bars every symbol shares, so
+adding a young coin shortens the window for the whole matrix. The `bars` count
+in the panel header says how many that is.
+
+---
+
+## Considered and left out
+
+Deliberate omissions, so the absence reads as a decision rather than an
+oversight:
+
+- **GARCH / stochastic volatility models.** Better volatility forecasts, but
+  they need fitting, tuning and a story about model risk. EWMA plus the
+  volatility percentile answers "is volatility rising, and is it high for this
+  coin" without any of that.
+- **Parametric VaR.** Cheaper than the historical version, and wrong in exactly
+  the direction that hurts: crypto's excess kurtosis of 3 to 8 makes the normal
+  assumption fail precisely on the days it matters.
+- **Order-book depth and spread.** The truest liquidity measures, but they need
+  a live book feed and cannot be reconstructed from candles. Amihud is the
+  honest approximation available from OHLCV.
+- **On-chain metrics** (active addresses, exchange flows, MVRV). Genuinely
+  informative and completely outside what a price feed can supply. They would
+  need a second data provider and a second set of caveats.
+- **Backtested strategy returns.** The project charts what happened; simulating
+  what a rule would have earned invites overfitting and would turn an
+  informational tool into an implied recommendation.

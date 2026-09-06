@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "./api/client";
 import { CoinHeader } from "./components/CoinHeader";
+import { ComparePanel } from "./components/ComparePanel";
 import { Header } from "./components/Header";
 import { IntervalPicker } from "./components/IntervalPicker";
 import { MarketList } from "./components/MarketList";
 import { PriceChart } from "./components/PriceChart";
 import { StatsPanels } from "./components/StatsPanels";
 import { useAsync } from "./hooks/useAsync";
-import { useCrtEffects, usePhosphor } from "./hooks/useDisplay";
+import { useCrtEffects, useLocale, usePhosphor } from "./hooks/useDisplay";
+import { I18nContext, translator } from "./i18n/useI18n";
 import "./App.css";
 
 /** Intervals worth offering for a statistics view. Sub-hourly bars make the
@@ -19,12 +21,21 @@ const DEFAULT_SYMBOL = "BTCUSDT";
 export function App() {
   const [phosphor, togglePhosphor] = usePhosphor();
   const [fx, toggleFx] = useCrtEffects();
+  const [locale, toggleLocale] = useLocale();
   const [symbol, setSymbol] = useState(DEFAULT_SYMBOL);
   const [interval, setInterval] = useState("1d");
   const [bars, setBars] = useState(500);
   const [showVolume, setShowVolume] = useState(true);
   const [showMovingAverages, setShowMovingAverages] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  // Rebuilding `t` only when the language changes keeps every consumer from
+  // re-rendering on unrelated state.
+  const i18n = useMemo(
+    () => ({ locale, t: translator(locale), toggleLocale }),
+    [locale, toggleLocale],
+  );
 
   const markets = useAsync((signal) => api.markets(150, signal), []);
 
@@ -72,85 +83,100 @@ export function App() {
   );
 
   return (
-    <div className="app">
-      <Header
-        phosphor={phosphor}
-        onTogglePhosphor={togglePhosphor}
-        fx={fx}
-        onToggleFx={toggleFx}
-        onOpenMarkets={() => setDrawerOpen(true)}
-        status={status}
-      />
+    <I18nContext.Provider value={i18n}>
+      <div className="app">
+        <Header
+          phosphor={phosphor}
+          onTogglePhosphor={togglePhosphor}
+          fx={fx}
+          onToggleFx={toggleFx}
+          onOpenMarkets={() => setDrawerOpen(true)}
+          onOpenCompare={() => setCompareOpen((open) => !open)}
+          compareOpen={compareOpen}
+          status={status}
+        />
 
-      <div className="app__body">
-        <aside className="app__sidebar">{list}</aside>
+        <div className="app__body">
+          <aside className="app__sidebar">{list}</aside>
 
-        <main className="app__main">
-          <CoinHeader
-            symbol={symbol}
-            market={selectedMarket}
-            stats={overview.data?.stats ?? null}
-          />
-
-          <IntervalPicker
-            intervals={INTERVALS}
-            value={interval}
-            onChange={setInterval}
-            bars={bars}
-            onBarsChange={setBars}
-            showVolume={showVolume}
-            onShowVolumeChange={setShowVolume}
-            showMovingAverages={showMovingAverages}
-            onShowMovingAveragesChange={setShowMovingAverages}
-          />
-
-          <section className="app__chart panel panel--bracketed">
-            <div className="panel__title">
-              <span>
-                {symbol} · {interval.toUpperCase()}
-              </span>
-              <span className="app__chart-source">
-                {(overview.data?.source ?? "").toUpperCase()}
-              </span>
-            </div>
-            <PriceChart
-              candles={overview.data?.candles ?? []}
-              phosphor={`${phosphor}-${fx}`}
-              showVolume={showVolume}
-              showMovingAverages={showMovingAverages}
+          <main className="app__main">
+            <CoinHeader
+              symbol={symbol}
+              market={selectedMarket}
+              stats={overview.data?.stats ?? null}
             />
-          </section>
 
-          {overview.error && (
-            <p className="app__error panel" role="alert">
-              <span className="app__error-tag">ERR</span>
-              {overview.error.message}
-              <button type="button" className="app__retry" onClick={overview.reload}>
-                [ RETRY ]
-              </button>
-            </p>
-          )}
+            <IntervalPicker
+              intervals={INTERVALS}
+              value={interval}
+              onChange={setInterval}
+              bars={bars}
+              onBarsChange={setBars}
+              showVolume={showVolume}
+              onShowVolumeChange={setShowVolume}
+              showMovingAverages={showMovingAverages}
+              onShowMovingAveragesChange={setShowMovingAverages}
+            />
 
-          {overview.data && <StatsPanels stats={overview.data.stats} />}
+            <section className="app__chart panel panel--bracketed">
+              <div className="panel__title">
+                <span>
+                  {symbol} · {interval.toUpperCase()}
+                </span>
+                <span className="app__chart-source">
+                  {(overview.data?.source ?? "").toUpperCase()}
+                </span>
+              </div>
+              <PriceChart
+                candles={overview.data?.candles ?? []}
+                phosphor={`${phosphor}-${fx}`}
+                showVolume={showVolume}
+                showMovingAverages={showMovingAverages}
+              />
+            </section>
 
-          <p className="app__disclaimer">
-            Informational only. Every figure is derived from historical candles and
-            says nothing about what happens next.
-          </p>
-        </main>
-      </div>
+            {overview.error && (
+              <p className="app__error panel" role="alert">
+                <span className="app__error-tag">{i18n.t("common.error")}</span>
+                {overview.error.message}
+                <button type="button" className="app__retry" onClick={overview.reload}>
+                  {i18n.t("common.retry")}
+                </button>
+              </p>
+            )}
 
-      {drawerOpen && (
-        <div className="app__drawer" role="dialog" aria-modal="true" aria-label="Markets">
-          <button
-            type="button"
-            className="app__scrim"
-            onClick={() => setDrawerOpen(false)}
-            aria-label="Close markets"
-          />
-          <div className="app__drawer-panel">{list}</div>
+            {compareOpen && (
+              <ComparePanel
+                symbol={symbol}
+                interval={interval}
+                bars={bars}
+                markets={markets.data?.markets ?? []}
+              />
+            )}
+
+            {overview.data && <StatsPanels stats={overview.data.stats} />}
+
+            <p className="app__disclaimer">{i18n.t("disclaimer")}</p>
+          </main>
         </div>
-      )}
-    </div>
+
+        {drawerOpen && (
+          <div
+            className="app__drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={i18n.t("markets.title")}
+          >
+            <button
+              type="button"
+              className="app__scrim"
+              onClick={() => setDrawerOpen(false)}
+              aria-label={i18n.t("markets.title")}
+            />
+            <div className="app__drawer-panel">{list}</div>
+          </div>
+        )}
+      </div>
+    </I18nContext.Provider>
   );
 }

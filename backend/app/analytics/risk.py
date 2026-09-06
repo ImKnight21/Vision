@@ -160,3 +160,111 @@ def return_distribution(close: pd.Series) -> dict[str, float | None]:
         "worst": float(returns.min()),
         "positive_share": float((returns > 0).mean()),
     }
+
+
+def ulcer_index(close: pd.Series) -> float | None:
+    """Root-mean-square drawdown: depth and duration in one number.
+
+    Max drawdown reports the single worst moment. The Ulcer Index asks how deep
+    the water was on average across the whole window, so a long shallow slump
+    and a brief violent crash stop looking alike. Returned as a positive
+    fraction; lower is calmer.
+    """
+    series = drawdown_series(close)
+    if len(series) < 2:
+        return None
+    return float(np.sqrt((series**2).mean()))
+
+
+def time_under_water(close: pd.Series) -> dict[str, float | int | None]:
+    """How much of the window was spent below a previous high, and for how long.
+
+    `share` is the fraction of bars in drawdown; `longest_bars` is the longest
+    unbroken stretch. An asset can post a fine annual return and still have been
+    underwater for nine tenths of the year, which is the part that decides
+    whether a position was actually holdable.
+    """
+    series = drawdown_series(close)
+    if len(series) < 2:
+        return {"share": None, "longest_bars": None, "current_bars": None}
+
+    underwater = (series < 0).to_numpy()
+
+    longest = current = 0
+    for flag in underwater:
+        current = current + 1 if flag else 0
+        longest = max(longest, current)
+
+    return {
+        "share": float(underwater.mean()),
+        "longest_bars": int(longest),
+        # `current` ends the loop holding the trailing run, which is the streak
+        # the asset is in right now.
+        "current_bars": int(current),
+    }
+
+
+def recovery_factor(close: pd.Series) -> float | None:
+    """Total return divided by the depth of the worst drawdown.
+
+    How much the asset earned per unit of its own worst decline. Unlike Calmar
+    it uses the raw window return rather than an annualised one, so it is not
+    distorted by a short sample.
+    """
+    from app.analytics.returns import total_return
+
+    profit = total_return(close)
+    max_dd = analyse_drawdown(close).max_drawdown
+    if profit is None or max_dd is None or max_dd == 0.0:
+        return None
+    return float(profit / abs(max_dd))
+
+
+def tail_ratio(close: pd.Series, quantile: float = 0.95) -> float | None:
+    """Size of the best tail against the worst: |95th pct| / |5th pct|.
+
+    Above 1 means the good outliers were bigger than the bad ones. This is the
+    asymmetry that skew hints at, stated in units you can act on.
+    """
+    returns = simple_returns(close)
+    if len(returns) < 30:
+        return None
+    values = returns.to_numpy(dtype=float)
+    upside = float(np.quantile(values, quantile))
+    downside = abs(float(np.quantile(values, 1.0 - quantile)))
+    if downside == 0:
+        return None
+    return float(upside / downside)
+
+
+def omega_ratio(close: pd.Series, threshold: float = 0.0) -> float | None:
+    """Total gains above `threshold` divided by total losses below it.
+
+    Uses the whole distribution rather than its first two moments, so unlike
+    Sharpe it does not quietly assume the returns are normal - which for crypto
+    they emphatically are not.
+    """
+    returns = simple_returns(close)
+    if len(returns) < 30:
+        return None
+    excess = returns.to_numpy(dtype=float) - threshold
+    gains = float(excess[excess > 0].sum())
+    losses = float(-excess[excess < 0].sum())
+    if losses == 0:
+        return None
+    return float(gains / losses)
+
+
+def gain_to_pain(close: pd.Series) -> float | None:
+    """Sum of all returns divided by the sum of the losing ones.
+
+    A blunt but honest read on whether the winners paid for the losers.
+    """
+    returns = simple_returns(close)
+    if len(returns) < 30:
+        return None
+    values = returns.to_numpy(dtype=float)
+    pain = float(-values[values < 0].sum())
+    if pain == 0:
+        return None
+    return float(values.sum() / pain)

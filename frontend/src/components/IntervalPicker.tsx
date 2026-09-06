@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n/useI18n";
 import "./IntervalPicker.css";
 
 interface Props {
@@ -25,10 +26,12 @@ export function IntervalPicker({
   showMovingAverages,
   onShowMovingAveragesChange,
 }: Props) {
+  const { t } = useI18n();
+
   return (
     <div className="controls panel">
       <fieldset className="controls__group">
-        <legend className="controls__legend">INTERVAL</legend>
+        <legend className="controls__legend">{t("controls.interval")}</legend>
         {intervals.map((interval) => (
           <button
             key={interval}
@@ -43,7 +46,7 @@ export function IntervalPicker({
       </fieldset>
 
       <fieldset className="controls__group">
-        <legend className="controls__legend">BARS</legend>
+        <legend className="controls__legend">{t("controls.bars")}</legend>
         {BAR_CHOICES.map((choice) => (
           <button
             key={choice}
@@ -58,14 +61,14 @@ export function IntervalPicker({
       </fieldset>
 
       <fieldset className="controls__group">
-        <legend className="controls__legend">OVERLAY</legend>
+        <legend className="controls__legend">{t("controls.overlay")}</legend>
         <button
           type="button"
           className={`controls__chip${showVolume ? " controls__chip--on" : ""}`}
           onClick={() => onShowVolumeChange(!showVolume)}
           aria-pressed={showVolume}
         >
-          VOL
+          {t("controls.volume")}
         </button>
         <button
           type="button"
@@ -73,7 +76,7 @@ export function IntervalPicker({
           onClick={() => onShowMovingAveragesChange(!showMovingAverages)}
           aria-pressed={showMovingAverages}
         >
-          MA 50/200
+          {t("controls.movingAverages")}
         </button>
       </fieldset>
     </div>

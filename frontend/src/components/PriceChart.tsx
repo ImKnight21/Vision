@@ -10,17 +10,27 @@ import {
   type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Candle } from "../api/types";
+import { useI18n } from "../i18n/useI18n";
+import { compact, percent, price, signClass } from "../lib/format";
 import "./PriceChart.css";
 
 interface Props {
   candles: Candle[];
-  /** Re-read the palette when the tube changes. */
+  /** Re-read the palette when the tube or effects change. */
   phosphor: string;
   showVolume: boolean;
   showMovingAverages: boolean;
 }
+
+/** A bar with every OHLC field present, which is what the chart can draw. */
+type SolidCandle = Candle & {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
 
 /** Read a design token so the chart matches the rest of the terminal. */
 function token(name: string, fallback: string): string {
@@ -29,13 +39,12 @@ function token(name: string, fallback: string): string {
 }
 
 /** Simple moving average over the closes, aligned to the same timestamps. */
-function movingAverage(candles: Candle[], window: number): LineData<Time>[] {
+function movingAverage(candles: SolidCandle[], window: number): LineData<Time>[] {
   const out: LineData<Time>[] = [];
   let sum = 0;
   const buffer: number[] = [];
 
   for (const candle of candles) {
-    if (candle.close == null) continue;
     buffer.push(candle.close);
     sum += candle.close;
     if (buffer.length > window) sum -= buffer.shift()!;
@@ -47,8 +56,23 @@ function movingAverage(candles: Candle[], window: number): LineData<Time>[] {
 }
 
 export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }: Props) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+
+  /** Timestamp of the bar under the cursor; null when the cursor is away. */
+  const [hoveredTime, setHoveredTime] = useState<number | null>(null);
+
+  const bars = useMemo(
+    () =>
+      candles.filter(
+        (c): c is SolidCandle =>
+          c.open != null && c.high != null && c.low != null && c.close != null,
+      ),
+    [candles],
+  );
+
+  const byTime = useMemo(() => new Map(bars.map((c) => [c.time, c])), [bars]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -78,13 +102,9 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
       rightPriceScale: {
         borderColor: rule,
         // Leave room at the bottom for the volume overlay to sit under price.
-        scaleMargins: { top: 0.08, bottom: showVolume ? 0.24 : 0.08 },
+        scaleMargins: { top: 0.16, bottom: showVolume ? 0.24 : 0.08 },
       },
-      timeScale: {
-        borderColor: rule,
-        timeVisible: true,
-        secondsVisible: false,
-      },
+      timeScale: { borderColor: rule, timeVisible: true, secondsVisible: false },
       crosshair: {
         mode: 0, // free crosshair, the way a terminal cursor moves
         vertLine: { color: phosphorColor, width: 1, style: 3, labelBackgroundColor: phosphorColor },
@@ -106,11 +126,6 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
       priceLineStyle: 2,
     });
 
-    const bars = candles.filter(
-      (c): c is Candle & { open: number; high: number; low: number; close: number } =>
-        c.open != null && c.high != null && c.low != null && c.close != null,
-    );
-
     priceSeries.setData(
       bars.map<CandlestickData<Time>>((c) => ({
         time: c.time as UTCTimestamp,
@@ -129,9 +144,7 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
         priceLineVisible: false,
         lastValueVisible: false,
       });
-      volumeSeries.priceScale().applyOptions({
-        scaleMargins: { top: 0.8, bottom: 0 },
-      });
+      volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
       volumeSeries.setData(
         bars
           .filter((c) => c.volume != null)
@@ -161,18 +174,60 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
       }
     }
 
+    // Drive the legend from the crosshair. `param.time` is absent whenever the
+    // pointer leaves the plot, which is the signal to fall back to the newest
+    // bar rather than freezing on whatever was last hovered.
+    chart.subscribeCrosshairMove((param) => {
+      setHoveredTime(typeof param.time === "number" ? param.time : null);
+    });
+
     chart.timeScale().fitContent();
 
     return () => {
       chart.remove();
       chartRef.current = null;
     };
-  }, [candles, phosphor, showVolume, showMovingAverages]);
+  }, [bars, phosphor, showVolume, showMovingAverages]);
+
+  const latest = bars.length ? bars[bars.length - 1]! : null;
+  const shown = (hoveredTime != null ? byTime.get(hoveredTime) : null) ?? latest;
+  // The newest bar of a live feed is still forming, so say so rather than
+  // presenting an in-progress close as a settled one.
+  const isLive = shown != null && latest != null && shown.time === latest.time;
+  const change = shown && shown.open > 0 ? shown.close / shown.open - 1 : null;
 
   return (
     <div className="chart">
-      <div className="chart__canvas" ref={containerRef} role="img" aria-label="Price chart" />
-      {candles.length === 0 && <p className="chart__empty">NO SIGNAL</p>}
+      {shown && (
+        <dl className="chart__legend" aria-live="off">
+          <Field label={t("chart.open")} value={price(shown.open)} />
+          <Field label={t("chart.high")} value={price(shown.high)} />
+          <Field label={t("chart.low")} value={price(shown.low)} />
+          <Field label={t("chart.close")} value={price(shown.close)} tone={signClass(change)} />
+          <Field label={t("chart.change")} value={percent(change)} tone={signClass(change)} />
+          {shown.volume != null && (
+            <Field label={t("chart.volume")} value={compact(shown.volume)} />
+          )}
+          {isLive && (
+            <dd className="chart__live" title={t("chart.liveHint")}>
+              <span className="chart__live-dot" aria-hidden="true" />
+              {t("chart.live")}
+            </dd>
+          )}
+        </dl>
+      )}
+
+      <div className="chart__canvas" ref={containerRef} role="img" aria-label={t("chart.label")} />
+      {candles.length === 0 && <p className="chart__empty">{t("chart.empty")}</p>}
+    </div>
+  );
+}
+
+function Field({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="chart__field">
+      <dt className="chart__field-label">{label}</dt>
+      <dd className={`chart__field-value ${tone ?? ""}`}>{value}</dd>
     </div>
   );
 }
