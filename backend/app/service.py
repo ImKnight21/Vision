@@ -33,10 +33,17 @@ async def get_markets(limit: int = 100) -> list[dict]:
     settings = get_settings()
 
     async def produce() -> list[dict]:
+        # CoinGecko is enrichment, not the answer, so it gets a hard deadline.
+        # Its client retries with backoff, which on a rate-limited free tier can
+        # stack up to the better part of a minute — long enough to hold the
+        # whole market list hostage for data the table renders fine without.
+        async def metadata() -> list[dict]:
+            return await asyncio.wait_for(
+                coingecko.fetch_markets(per_page=250), timeout=settings.meta_budget
+            )
+
         tickers, meta = await asyncio.gather(
-            binance.fetch_tickers(),
-            coingecko.fetch_markets(per_page=250),
-            return_exceptions=True,
+            binance.fetch_tickers(), metadata(), return_exceptions=True
         )
 
         if isinstance(tickers, BaseException):
@@ -44,7 +51,12 @@ async def get_markets(limit: int = 100) -> list[dict]:
 
         by_base: dict[str, dict] = {}
         if isinstance(meta, BaseException):
-            log.warning("coingecko metadata unavailable: %s", meta)
+            # A bare TimeoutError stringifies to "", so name the type too.
+            log.warning(
+                "coingecko metadata unavailable (%s: %s); serving prices only",
+                type(meta).__name__,
+                meta,
+            )
         else:
             # Rows arrive market-cap-desc, so the first claim on a ticker symbol
             # is the dominant coin — that is what `setdefault` keeps.

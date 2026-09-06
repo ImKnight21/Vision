@@ -15,7 +15,11 @@
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
+  /* The brand is the flexible half. Clipping matters: a flex item shrinks its
+     box but not the text inside it, so without this the wordmark spills over
+     the controls instead of giving way to them. */
   min-width: 0;
+  overflow: hidden;
 }
 
 .header__logo {
@@ -43,6 +47,8 @@
   gap: var(--space-3);
   font-size: var(--step--1);
   letter-spacing: 0.1em;
+  /* Controls are interactive; they never give up room. */
+  flex-shrink: 0;
 }
 
 .header__button {
@@ -57,7 +63,7 @@
 .header__button:hover,
 .header__button:focus-visible {
   color: var(--phosphor);
-  border-color: var(--phosphor-rule);
+  border-color: var(--rule);
 }
 
 .header__status {
@@ -85,7 +91,9 @@
   white-space: nowrap;
 }
 
-/* On a phone the brand shrinks to the logo and the secondary chrome goes. */
+/* Below each threshold the header sheds whatever is least load-bearing, in
+   order: the tagline and the status pill, then the wordmark (the logo glyph
+   still identifies the app), then the clock. */
 @media (max-width: 720px) {
   .header__subtitle,
   .header__status {
@@ -95,6 +103,27 @@
   .header__title {
     font-size: var(--step-1);
     letter-spacing: 0.16em;
+  }
+}
+
+@media (max-width: 600px) {
+  .header__title {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .header {
+    gap: var(--space-2);
+    padding: 0 var(--space-2);
+  }
+
+  .header__controls {
+    gap: var(--space-2);
+  }
+
+  .header__clock {
+    display: none;
   }
 }
 

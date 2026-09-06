@@ -18,10 +18,12 @@ body {
   color: var(--text);
   font-family: var(--font-mono);
   font-size: var(--step-0);
-  line-height: 1.5;
+  line-height: 1.55;
   font-variant-ligatures: none;
-  /* Tabular figures keep price columns from shifting as digits change. */
-  font-variant-numeric: tabular-nums;
+  /* Tabular figures keep price columns from shifting as digits change;
+     the slashed zero is what separates 0 from O at this size. */
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: "zero" 1, "ss02" 1;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
@@ -43,9 +45,9 @@ body::before {
   background: repeating-linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0) 0px,
-    rgba(0, 0, 0, 0) 2px,
-    rgba(0, 0, 0, var(--scanline-opacity)) 3px,
-    rgba(0, 0, 0, var(--scanline-opacity)) 4px
+    rgba(0, 0, 0, 0) 3px,
+    rgba(0, 0, 0, var(--scanline-opacity)) 4px,
+    rgba(0, 0, 0, var(--scanline-opacity)) 5px
   );
 }
 
@@ -54,7 +56,7 @@ body::after {
   background: radial-gradient(
     ellipse 120% 100% at 50% 50%,
     rgba(0, 0, 0, 0) 55%,
-    rgba(0, 0, 0, 0.55) 100%
+    rgba(0, 0, 0, var(--vignette-strength)) 100%
   );
 }
 

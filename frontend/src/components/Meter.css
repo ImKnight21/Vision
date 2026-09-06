@@ -26,7 +26,7 @@
   position: relative;
   height: 10px;
   margin: var(--space-2) 0 var(--space-1);
-  border: 1px solid var(--phosphor-rule);
+  border: 1px solid var(--rule);
   /* Hatching makes the empty part of the track read as a printed scale. */
   background: repeating-linear-gradient(
     90deg,
@@ -46,7 +46,7 @@
   top: -2px;
   bottom: -2px;
   width: 1px;
-  background: var(--text-faint);
+  background: var(--rule);
 }
 
 .meter__cursor {

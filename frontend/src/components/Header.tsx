@@ -1,10 +1,12 @@
 import { useClock } from "../hooks/useClock";
-import type { Phosphor } from "../hooks/usePhosphor";
+import type { Fx, Phosphor } from "../hooks/useDisplay";
 import "./Header.css";
 
 interface Props {
   phosphor: Phosphor;
   onTogglePhosphor: () => void;
+  fx: Fx;
+  onToggleFx: () => void;
   onOpenMarkets: () => void;
   status: "live" | "loading" | "error";
 }
@@ -15,7 +17,14 @@ const STATUS_LABEL: Record<Props["status"], string> = {
   error: "NO LINK",
 };
 
-export function Header({ phosphor, onTogglePhosphor, onOpenMarkets, status }: Props) {
+export function Header({
+  phosphor,
+  onTogglePhosphor,
+  fx,
+  onToggleFx,
+  onOpenMarkets,
+  status,
+}: Props) {
   const clock = useClock();
 
   return (
@@ -44,6 +53,16 @@ export function Header({ phosphor, onTogglePhosphor, onOpenMarkets, status }: Pr
           aria-label={`Switch to ${phosphor === "green" ? "amber" : "green"} phosphor`}
         >
           TUBE:{phosphor === "green" ? "P1" : "P3"}
+        </button>
+
+        <button
+          type="button"
+          className="header__button"
+          onClick={onToggleFx}
+          aria-pressed={fx === "on"}
+          title="Scanlines, vignette and glow. Turn them off for a flat, maximally legible screen."
+        >
+          FX:{fx.toUpperCase()}
         </button>
 
         <span className={`header__status header__status--${status}`}>

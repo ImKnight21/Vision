@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # Outbound HTTP budget for a single upstream call.
     http_timeout: float = 15.0
 
+    # Total budget for optional metadata enrichment. Exceeding it drops the
+    # extra fields rather than delaying the response.
+    meta_budget: float = 6.0
+
     coingecko_api_key: str = Field(
         default="",
         validation_alias=AliasChoices("COINGECKO_API_KEY", "VISION_COINGECKO_API_KEY"),

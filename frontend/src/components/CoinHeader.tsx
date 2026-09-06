@@ -10,10 +10,9 @@ interface Props {
 
 export function CoinHeader({ symbol, market, stats }: Props) {
   const last = stats?.price.last ?? market?.price ?? null;
-  const change = stats?.price.change_1d ?? market?.change_24h ?? null;
 
   const deltas = [
-    { key: "24H", value: stats?.price.change_1d ?? market?.change_24h ?? null },
+    { key: "24H", value: market?.change_24h ?? stats?.price.change_1d ?? null },
     { key: "7D", value: stats?.price.change_7d ?? market?.change_7d ?? null },
     { key: "30D", value: stats?.price.change_30d ?? market?.change_30d ?? null },
     { key: "90D", value: stats?.price.change_90d ?? null },
@@ -33,7 +32,7 @@ export function CoinHeader({ symbol, market, stats }: Props) {
         </div>
 
         <div className="coin__quote">
-          <span className={`coin__price ${signClass(change)}`}>{price(last)}</span>
+          <span className="coin__price">{price(last)}</span>
           <span className="coin__quote-unit">USDT</span>
         </div>
       </div>

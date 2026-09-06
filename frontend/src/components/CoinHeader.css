@@ -45,7 +45,9 @@
   font-size: var(--step-3);
   line-height: 1.05;
   letter-spacing: -0.01em;
-  text-shadow: 0 0 14px currentColor;
+  color: var(--phosphor-bright);
+  /* Just enough bloom to read as phosphor; more starts blurring the digits. */
+  text-shadow: var(--glow-soft);
 }
 
 .coin__quote-unit {

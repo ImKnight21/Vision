@@ -20,6 +20,9 @@ dist-ssr/
 .vite/
 *.tsbuildinfo
 
+# --- generated assets (reproduce with scripts/generate_assets.py) ---
+frontend/public/generated/
+
 # --- data / cache ---
 backend/.cache/
 *.sqlite

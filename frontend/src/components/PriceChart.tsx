@@ -54,11 +54,11 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
     const container = containerRef.current;
     if (!container) return;
 
-    const phosphorColor = token("--phosphor", "#3dff7a");
-    const up = token("--up", "#3dff7a");
-    const down = token("--down", "#ff5f4d");
-    const textDim = token("--text-dim", "#5d8a6a");
-    const rule = token("--phosphor-rule", "rgba(61,255,122,0.22)");
+    const phosphorColor = token("--phosphor", "#4dff85");
+    const up = token("--up", "#4dff85");
+    const down = token("--down", "#ff7a68");
+    const textDim = token("--text-dim", "#8fd6a4");
+    const rule = token("--rule", "rgba(77,255,133,0.26)");
 
     const chart = createChart(container, {
       // Pin the locale: otherwise axis dates follow the viewer's system
@@ -68,7 +68,7 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
         background: { color: "transparent" },
         textColor: textDim,
         fontFamily: token("--font-mono", "monospace"),
-        fontSize: 10,
+        fontSize: 11,
         attributionLogo: false,
       },
       grid: {

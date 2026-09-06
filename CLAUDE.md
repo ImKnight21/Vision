@@ -20,7 +20,7 @@ The dev server binds `localhost`, which resolves to IPv6 on Windows —
 ## Check it
 
 ```bash
-cd backend  && .venv/Scripts/python.exe -m pytest   # 29 tests, no network
+cd backend  && .venv/Scripts/python.exe -m pytest   # 35 tests, no network
 cd frontend && npm run typecheck && npm run build
 ```
 
@@ -48,6 +48,16 @@ to `None`; `test_payload_is_json_safe` asserts it with `allow_nan=False`.
 **Components read colours from CSS tokens only.** No component hard-codes a hex
 value, including the chart — it reads `--phosphor` and friends at mount so the
 green/amber tube switch works. Tokens live in `frontend/src/styles/tokens.css`.
+
+**New text colours must be measured, not eyeballed.** Every text token clears
+WCAG AA against its background *with the scanline overlay applied*. Use
+`--rule` / `--rule-faint` for decorative lines; never put text in them. The
+method and the numbers are in `docs/DESIGN.md`.
+
+**Theme attributes are written synchronously in the toggle handler**, not left
+to an effect: React runs a child's effects before its parent's, so the chart
+would otherwise re-read the previous theme's palette. See
+`hooks/useDisplay.ts`.
 
 ## Layout
 

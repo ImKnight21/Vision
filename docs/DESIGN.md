@@ -9,8 +9,8 @@ is dense numeric data.
 ## Principles
 
 1. **One typeface, monospace, tabular figures.** Prices sit in columns and must
-   not shift as digits change. `font-variant-numeric: tabular-nums` is set
-   globally.
+   not shift as digits change, and `0` must never be mistaken for `O`:
+   `font-variant-numeric: tabular-nums slashed-zero` is set globally.
 2. **Colour carries meaning or is absent.** The interface is one phosphor hue
    plus up/down. There is no decorative palette.
 3. **No rounded corners, no shadows-as-depth.** `--radius: 0`. Panels are
@@ -20,7 +20,8 @@ is dense numeric data.
    terminal that shows twelve statistics without scrolling beats one that shows
    four beautifully.
 5. **Effects yield to preference.** Scanlines dim and animation stops under
-   `prefers-reduced-motion`.
+   `prefers-reduced-motion`, and `FX:OFF` retracts the tube effects entirely.
+   No amount of atmosphere is worth a number the reader cannot trust.
 
 ## Tokens
 
@@ -34,9 +35,11 @@ Two phosphor types, switched by `data-phosphor` on `<html>` and remembered in
 
 | | P1 (green, default) | P3 (amber) |
 | --- | --- | --- |
-| `--phosphor` | `#3dff7a` | `#ffb340` |
-| `--bg` | `#040604` | `#060402` |
-| `--text` | `#b7f5c8` | `#f5d9a8` |
+| `--phosphor` | `#4dff85` | `#ffc154` |
+| `--bg-panel` | `#070c08` | `#0c0805` |
+| `--text` | `#ccffd9` | `#ffe6bd` |
+| `--text-dim` | `#8fd6a4` | `#dbae74` |
+| `--text-faint` | `#6aae7f` | `#b78a55` |
 
 Because the amber tube redefines every colour token rather than filtering the
 page, `--up` and `--down` stay distinguishable in both: they differ in
@@ -46,13 +49,49 @@ separate the hues.
 ### Type scale
 
 Fluid, `clamp()`-based, from `--step--1` (labels) to `--step-3` (the one large
-number on the screen: the price). IBM Plex Mono, with a real monospace fallback
-stack so the layout holds if Google Fonts is unreachable.
+number on the screen: the price). JetBrains Mono, falling back to IBM Plex Mono
+and then a real system monospace stack, so the layout holds if Google Fonts is
+unreachable. See [Legibility](#legibility) for why that face.
 
 ### Spacing
 
 `--space-1` (0.25rem) through `--space-6` (2.25rem). Most panel padding is
 `--space-2` or `--space-3`.
+
+## Legibility
+
+The aesthetic is subordinate to reading numbers. Three things enforce that.
+
+**Measured contrast, not eyeballed.** Every text token clears WCAG AA against
+its own background *after* the scanline overlay darkens both — the overlay is
+part of the design, so it has to be part of the measurement. The first pass got
+this wrong: `--text-faint` sat at 2.21:1 raw and 1.52:1 through scanlines, and
+it was carrying coin names, ranks and volumes.
+
+| Token | Before | Now (raw) | Now (through scanlines) |
+| ----- | ------ | --------- | ----------------------- |
+| `--text` | 15.87 | 17.72 | 12.97 |
+| `--text-dim` | 4.98 | 11.57 | 8.62 |
+| `--text-faint` | **2.21** | 7.49 | 5.72 |
+
+Decoration was split off into `--rule` and `--rule-faint` at the same time, so
+raising text contrast did not turn hairlines and dotted leaders into shouting.
+
+**A typeface chosen for disambiguation.** JetBrains Mono, with
+`font-variant-numeric: tabular-nums slashed-zero`. It draws `0`/`O` and
+`1`/`l`/`I` as unmistakably different shapes, which is exactly the failure mode
+of a dense price table. Base size is ~15px, not the ~13.5px the first pass used.
+
+**The glass is optional.** `FX:ON/OFF` in the header retracts scanlines,
+vignette and glow via `data-fx="off"`. It changes no colour, so contrast only
+improves. Scanlines default to 0.14 opacity on a 5px period; the original 0.35
+on a 4px period cut every contrast ratio by roughly half.
+
+Glow is capped at a few pixels of blur throughout. Past that it eats the edges
+of the glyphs it is meant to flatter — which is why the headline price is
+`--phosphor-bright` with a soft glow rather than a hard one, and why it is no
+longer tinted by direction: colouring the largest element on screen alarm-red
+over a −0.02% move was noise, not signal.
 
 ## Components
 
@@ -89,6 +128,11 @@ The statistics grid needs no breakpoint at all: `repeat(auto-fit, minmax(17rem,
   Russian month abbreviations.
 - **`localStorage` throws, not just returns null**, in private windows and when
   site data is blocked. Every access is wrapped.
+- **A child's effects run before its parent's.** The theme hook set
+  `data-phosphor` in an effect, so when the tube was switched the chart — a
+  child that re-reads its palette from the CSS variables — sampled the *previous*
+  theme and stayed green on an amber screen. The attribute is now written
+  synchronously in the toggle handler, before React re-renders.
 
 ## Extending it
 

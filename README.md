@@ -54,7 +54,7 @@ so both halves run on one origin.
 Tests:
 
 ```bash
-cd backend && python -m pytest      # 29 tests, no network required
+cd backend && python -m pytest      # 35 tests, no network required
 cd frontend && npm run typecheck
 ```
 
@@ -123,11 +123,31 @@ docs/
 
 A monochrome phosphor tube: one monospace typeface, no rounded corners, colour
 used only where it carries meaning. Two tube types ship — P1 green and P3 amber
-— toggled from the header and remembered per browser. Scanlines and vignette
-are decoration and step aside for `prefers-reduced-motion`.
+— toggled from the header and remembered per browser.
+
+Legibility outranks the aesthetic. Every text colour is measured against WCAG AA
+*through* the scanline overlay, the typeface (JetBrains Mono, slashed zero) is
+chosen so `0`/`O` and `1`/`l`/`I` cannot be confused in a dense price table, and
+`FX:OFF` in the header retracts scanlines, vignette and glow entirely for a
+flat, maximally readable screen. Effects also step aside for
+`prefers-reduced-motion`.
 
 The system is documented in [docs/DESIGN.md](docs/DESIGN.md); the tokens live in
 [frontend/src/styles/tokens.css](frontend/src/styles/tokens.css).
+
+## Image assets
+
+The CRT look is CSS, not artwork — but for the few things CSS cannot draw
+(social preview, textures) there is a build-time generator that talks to
+polza.ai:
+
+```bash
+python scripts/generate_assets.py --list   # models and prices
+python scripts/generate_assets.py noise
+```
+
+Details and the API's traps are in [docs/ASSETS.md](docs/ASSETS.md). The running
+app never calls it, and no key is needed to use Vision.
 
 ## Configuration
 
@@ -138,6 +158,8 @@ Everything is optional — the app runs with no `.env` at all. See
 - `VISION_CORS_ORIGINS` — comma-separated allowed origins.
 - `COINGECKO_API_KEY` — raises the free rate limit; without it CoinGecko is
   still used, just more sparingly.
+- `VISION_META_BUDGET` — seconds allowed for optional CoinGecko enrichment
+  before the market list ships with prices alone (default 6).
 
 ## Licence
 

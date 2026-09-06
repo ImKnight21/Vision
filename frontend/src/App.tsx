@@ -7,7 +7,7 @@ import { MarketList } from "./components/MarketList";
 import { PriceChart } from "./components/PriceChart";
 import { StatsPanels } from "./components/StatsPanels";
 import { useAsync } from "./hooks/useAsync";
-import { usePhosphor } from "./hooks/usePhosphor";
+import { useCrtEffects, usePhosphor } from "./hooks/useDisplay";
 import "./App.css";
 
 /** Intervals worth offering for a statistics view. Sub-hourly bars make the
@@ -18,6 +18,7 @@ const DEFAULT_SYMBOL = "BTCUSDT";
 
 export function App() {
   const [phosphor, togglePhosphor] = usePhosphor();
+  const [fx, toggleFx] = useCrtEffects();
   const [symbol, setSymbol] = useState(DEFAULT_SYMBOL);
   const [interval, setInterval] = useState("1d");
   const [bars, setBars] = useState(500);
@@ -75,6 +76,8 @@ export function App() {
       <Header
         phosphor={phosphor}
         onTogglePhosphor={togglePhosphor}
+        fx={fx}
+        onToggleFx={toggleFx}
         onOpenMarkets={() => setDrawerOpen(true)}
         status={status}
       />
@@ -112,7 +115,7 @@ export function App() {
             </div>
             <PriceChart
               candles={overview.data?.candles ?? []}
-              phosphor={phosphor}
+              phosphor={`${phosphor}-${fx}`}
               showVolume={showVolume}
               showMovingAverages={showMovingAverages}
             />
