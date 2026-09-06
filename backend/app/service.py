@@ -16,12 +16,22 @@ from app.analytics.returns import INTERVAL_SECONDS, total_return
 from app.analytics.summary import bars_for_days, json_safe
 from app.cache import cache
 from app.config import get_settings
-from app.sources import binance, coingecko, cryptocompare
+from app.sources import binance, bybit, coingecko, cryptocompare
 from app.sources.base import UpstreamError
 
 log = logging.getLogger("vision.service")
 
 VALID_INTERVALS = frozenset(INTERVAL_SECONDS)
+
+# Tried in order until one answers. Binance leads on depth and is what the
+# figures are expected to match; Bybit is the keyless insurance against
+# Binance's HTTP 418 IP bans, which shared hosting attracts through no fault
+# of ours; CryptoCompare is last because it now demands an API key and so is
+# unavailable unless one is configured.
+OHLCV_SOURCES = (binance, bybit, cryptocompare)
+
+# Only the exchanges: CryptoCompare has no equivalent whole-market ticker call.
+TICKER_SOURCES = (binance, bybit)
 
 # Almost every alt is, statistically, a leveraged position on BTC, so BTC is
 # the benchmark everything is measured against by default.
@@ -51,8 +61,23 @@ async def get_markets(limit: int = 100) -> list[dict]:
                 coingecko.fetch_markets(per_page=250), timeout=settings.meta_budget
             )
 
+        async def prices() -> list[dict]:
+            failures: list[str] = []
+            for source in TICKER_SOURCES:
+                try:
+                    return await source.fetch_tickers()
+                except UpstreamError as exc:
+                    failures.append(f"{source.PROVIDER}: {exc}")
+                    log.warning(
+                        "%s tickers unavailable (%s); trying the next source",
+                        source.PROVIDER, exc,
+                    )
+            raise UpstreamError(
+                "vision", f"no source could list markets ({'; '.join(failures)})"
+            )
+
         tickers, meta = await asyncio.gather(
-            binance.fetch_tickers(), metadata(), return_exceptions=True
+            prices(), metadata(), return_exceptions=True
         )
 
         if isinstance(tickers, BaseException):
@@ -115,20 +140,20 @@ async def get_ohlcv(symbol: str, interval: str, limit: int = 500) -> pd.DataFram
     settings = get_settings()
 
     async def produce() -> pd.DataFrame:
-        try:
-            return await binance.fetch_ohlcv(symbol, interval, limit)
-        except UpstreamError as exc:
-            log.warning("binance failed for %s %s (%s); trying fallback",
-                        symbol, interval, exc)
+        failures: list[str] = []
+        for source in OHLCV_SOURCES:
             try:
-                return await cryptocompare.fetch_ohlcv(symbol, interval, limit)
-            except UpstreamError as fallback_exc:
-                # Surface the primary failure: it is the one worth acting on.
-                raise UpstreamError(
-                    "vision",
-                    f"no source could serve {symbol} {interval} "
-                    f"(binance: {exc}; cryptocompare: {fallback_exc})",
-                ) from fallback_exc
+                return await source.fetch_ohlcv(symbol, interval, limit)
+            except UpstreamError as exc:
+                failures.append(f"{source.PROVIDER}: {exc}")
+                log.warning(
+                    "%s failed for %s %s (%s); trying the next source",
+                    source.PROVIDER, symbol, interval, exc,
+                )
+        raise UpstreamError(
+            "vision",
+            f"no source could serve {symbol} {interval} ({'; '.join(failures)})",
+        )
 
     return await cache.get_or_set(
         f"ohlcv:{symbol}:{interval}:{limit}", settings.ttl_ohlcv, produce

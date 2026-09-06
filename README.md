@@ -18,7 +18,7 @@ nothing about what happens next.
 | Backend   | FastAPI + pandas/numpy                        | The statistics are the product; pandas does them in a few lines and is easy to test. |
 | Frontend  | React 19 + Vite + TypeScript                  | Fast dev loop, strict types across the API boundary. |
 | Charts    | lightweight-charts 5                          | Built for financial series, ~40 kB gzipped, no chart-library bloat. |
-| Data      | Binance → CryptoCompare, plus CoinGecko       | Binance for candles, CoinGecko for names/market cap, CryptoCompare as fallback. |
+| Data      | Binance → Bybit → CryptoCompare, plus CoinGecko | Binance for candles, Bybit as the keyless fallback when Binance bans a shared host IP, CoinGecko for names and market cap. |
 
 ## Getting started
 
@@ -116,7 +116,7 @@ Each statistic and how to read it is documented in
 backend/
   app/
     analytics/     volatility, risk, indicators, returns → summary
-    sources/       binance, coingecko, cryptocompare adapters
+    sources/       binance, bybit, coingecko, cryptocompare adapters
     routers/       HTTP surface
     service.py     cache + source fallback + the price/metadata merge
     cache.py       TTL cache with single-flight

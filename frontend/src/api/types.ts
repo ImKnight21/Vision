@@ -14,7 +14,8 @@ export interface MarketRow {
   high_24h: number | null;
   low_24h: number | null;
   volume_24h: number;
-  trades_24h: number;
+  /** Bybit publishes no spot trade count, so this is absent on its rows. */
+  trades_24h: number | null;
   market_cap: number | null;
   market_cap_rank: number | null;
   circulating_supply: number | null;

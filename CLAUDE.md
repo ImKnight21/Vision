@@ -88,12 +88,34 @@ Restarting and clearing `node_modules/.vite` does not help.
 
 ## Data sources
 
-Binance is primary for candles (`data-api.binance.vision` first — it is not
-regionally blocked the way `api.binance.com` can be). CryptoCompare is the
-fallback. CoinGecko supplies names, logos and market cap; if it is rate-limited
-the market list still renders without them, which is deliberate.
+Candles and tickers come from a chain declared in `service.py`, tried in order:
 
-No API key is required to run anything.
+1. **Binance** (`data-api.binance.vision` first — it is not regionally blocked
+   the way `api.binance.com` can be). Primary, and the figures users expect to
+   match.
+2. **Bybit.** Keyless, and its spot symbols are `BTCUSDT` exactly like
+   Binance's, so it substitutes without a translation table. Prices come from a
+   different book, so they will not agree tick for tick; over a statistical
+   window that is immaterial.
+3. **CryptoCompare.** Last, because it now answers `401` without an API key.
+
+Binance answers **`418`** once an IP exceeds its request weight, and shared
+hosting egresses through addresses other tenants are also hammering — so on a
+free host the ban is the normal case, not an exotic one. That is what Bybit is
+insurance against. Before Bybit existed the chain fell to CryptoCompare, which
+`401`s, and the whole site returned 502.
+
+CoinGecko supplies names, logos and market cap; if it is rate-limited the
+market list still renders without them, which is deliberate.
+
+**Leveraged tokens are excluded, but the suffix alone is not evidence.** JUP
+(Jupiter, ~$18M daily) and SYRUP both end in `UP`, and BEAR and BULL are coins
+named exactly after the suffixes. `sources/base.is_leveraged` strips the suffix
+and drops the row only when what remains is itself a traded base: `BTCUP`
+leaves `BTC` and is a wrapper, `JUP` leaves `J` and is a coin.
+
+No API key is required to run anything: Binance and Bybit are both keyless.
+`COINGECKO_API_KEY` and `CRYPTOCOMPARE_API_KEY` only widen what already works.
 
 ## Deployment
 

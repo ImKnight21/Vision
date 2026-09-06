@@ -4,7 +4,7 @@ import pytest
 
 from app import service
 from app.cache import cache
-from app.sources import binance, coingecko
+from app.sources import binance, bybit, coingecko
 from app.sources.base import UpstreamError
 
 TICKERS = [
@@ -98,7 +98,10 @@ async def test_failing_prices_do_fail_the_list(monkeypatch):
     async def boom():
         raise UpstreamError("binance", "all hosts failed")
 
+    # Every ticker source has to be stubbed, or the fallback chain reaches the
+    # network and the test stops being offline.
     monkeypatch.setattr(binance, "fetch_tickers", boom)
+    monkeypatch.setattr(bybit, "fetch_tickers", boom)
 
     async def fake_markets(per_page=250, page=1):
         return list(META)

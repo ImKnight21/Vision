@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from app.sources.base import UpstreamError, fetch_json, to_ohlcv_frame
+from app.sources.base import UpstreamError, fetch_json, is_leveraged, to_ohlcv_frame
 
 PROVIDER = "binance"
 
@@ -77,14 +77,21 @@ async def fetch_tickers() -> list[dict]:
     if not isinstance(raw, list):
         raise UpstreamError(PROVIDER, "unexpected ticker payload")
 
+    # The leverage test needs to know every base the exchange trades, so the
+    # rows are collected first and filtered second.
+    traded_bases = {
+        row["symbol"][: -len("USDT")]
+        for row in raw
+        if isinstance(row.get("symbol"), str) and row["symbol"].endswith("USDT")
+    }
+
     out: list[dict] = []
     for row in raw:
         symbol = row.get("symbol", "")
         if not symbol.endswith("USDT"):
             continue
-        # Leveraged tokens and staked wrappers are noise in a market overview.
         base = symbol[: -len("USDT")]
-        if base.endswith(("UP", "DOWN", "BULL", "BEAR")):
+        if is_leveraged(base, traded_bases):
             continue
         try:
             quote_volume = float(row["quoteVolume"])

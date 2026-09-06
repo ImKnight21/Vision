@@ -88,6 +88,29 @@ async def fetch_json(
     raise UpstreamError(provider, f"unreachable after {attempts} attempts: {last}")
 
 
+# Leveraged tokens are derivatives, not coins: their price tracks a multiple of
+# something else's move and every statistic here would describe the wrapper
+# rather than the asset. Binance names them BTCUP/BTCDOWN/ETHBULL, Bybit BTC3L.
+LEVERAGE_SUFFIXES = ("UP", "DOWN", "BULL", "BEAR", "3L", "3S", "5L", "5S")
+
+
+def is_leveraged(base: str, traded_bases: set[str]) -> bool:
+    """True when `base` looks like a leveraged wrapper around a listed asset.
+
+    Matching the suffix alone is not enough. JUP (Jupiter) ends in "UP" and
+    SYRUP ends in "UP"; both are ordinary coins, and JUP is a top-100 one, so a
+    bare suffix test silently drops real markets from the list. The wrapper is
+    identifiable by structure instead: strip the suffix and what remains must
+    itself be a traded asset, because a leveraged token is always named after
+    the thing it levers. "BTCUP" leaves "BTC" and is a wrapper; "JUP" leaves
+    "J", which trades nowhere, and is a coin.
+    """
+    return any(
+        base.endswith(suffix) and base[: -len(suffix)] in traded_bases
+        for suffix in LEVERAGE_SUFFIXES
+    )
+
+
 def to_ohlcv_frame(rows: list[dict], *, source: str) -> pd.DataFrame:
     """Normalise adapter rows into the canonical frame.
 

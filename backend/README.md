@@ -2,7 +2,7 @@
 
 The backend half of [Vision](https://github.com/ImKnight21/Vision), a crypto
 market terminal. FastAPI plus pandas: it fetches candles from Binance, falls
-back to CryptoCompare, merges CoinGecko metadata, and computes volatility,
+back to Bybit and then CryptoCompare, merges CoinGecko metadata, and computes volatility,
 drawdown, tail-risk, regime, liquidity and relative-to-BTC statistics.
 
 Interactive API docs are at `/docs`; `/api/health` is the liveness probe.

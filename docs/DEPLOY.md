@@ -46,8 +46,10 @@ candle source unreachable and quietly demote every request to the
 CryptoCompare fallback, which aggregates across exchanges and will not match
 Binance tick for tick. Singapore works too. `render.yaml` pins Frankfurt.
 
-If `/api/stats/BTCUSDT` returns data with `"source":"cryptocompare"`, Binance is
-being blocked from that region and the fallback is carrying the app.
+If `/api/stats/BTCUSDT` returns data with `"source":"bybit"`, Binance is
+unreachable from the host and the fallback is carrying the app. That is a
+working state, not a broken one, but the numbers then come from Bybit's order
+book rather than Binance's.
 
 ---
 
@@ -116,6 +118,23 @@ Ways to avoid it, in order of how much they cost:
 
 ---
 
+## Data sources on a shared host
+
+Free hosting egresses through IP addresses shared with many other tenants, and
+both upstreams price that in:
+
+| Symptom | Cause | Effect |
+| ------- | ----- | ------ |
+| `binance: HTTP 418` | The shared IP exceeded Binance's request weight and was auto-banned. | None visible. Bybit serves the candles instead. |
+| CoinGecko rows missing | The shared IP is rate-limited. | Prices and every statistic still render; names, logos and market caps do not. |
+
+The first is covered by the fallback chain and needs no action. The second is
+worth fixing with a free CoinGecko demo key, added as `COINGECKO_API_KEY` in
+the Render dashboard: the limit then attaches to the key rather than to the
+address the whole platform shares.
+
+---
+
 ## Configuration
 
 Nothing is required. The backend runs with no environment variables at all.
@@ -166,8 +185,21 @@ waking. Expected; see above.
 rate-limited. Deliberate behaviour: the market list ships with exchange data
 rather than waiting. Add `COINGECKO_API_KEY` to raise the limit.
 
-**`"source":"cryptocompare"` on every response.** Binance is unreachable from
-the backend's region. Check the region is not a US one.
+**`"source":"bybit"` on every response.** Binance is unreachable from the
+backend. Two different causes look identical here:
+
+- **`451`** means the region is blocked. Check the region is not a US one.
+- **`418`** means Binance has banned the host's IP for exceeding its request
+  weight. Free hosting shares egress addresses with many other tenants, so this
+  happens through no fault of the app and clears on its own. Nothing to do:
+  Bybit covers it.
+
+The service log names the status. Either way the site keeps working, which is
+the whole point of the chain.
+
+**Every endpoint returns 502 with "no source could serve".** All three sources
+failed. Read the message: it names what each one said. `cryptocompare: HTTP
+401` is expected and not the cause, since CryptoCompare needs an API key.
 
 **The Netlify build fails on `npm run build`.** Check the build log for the Node
 version; `netlify.toml` pins 22, and a UI setting cannot override the file.
