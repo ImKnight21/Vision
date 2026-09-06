@@ -1,0 +1,50 @@
+# Netlify hosts the frontend only. The Python backend cannot run here - Netlify
+# Functions are JavaScript and Go - so it runs on Render and this file proxies
+# to it. See docs/DEPLOY.md and render.yaml.
+
+[build]
+  base = "frontend"
+  command = "npm run build"
+  # Relative to `base`, so this resolves to frontend/dist.
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# ---------------------------------------------------------------------------
+#  THE ONE LINE TO EDIT
+#
+#  Replace the host below with the URL Render gives the service. It is shown at
+#  the top of the service page and looks like https://vision-api.onrender.com,
+#  though Render appends a suffix when the plain name is already taken
+#  globally, so copy the real one rather than assuming.
+#
+#  status = 200 makes this a proxy rather than a redirect: the browser sees
+#  everything on one origin, so no CORS check is involved and the backend URL
+#  never reaches the client.
+# ---------------------------------------------------------------------------
+[[redirects]]
+  from = "/api/*"
+  to = "https://vision-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# Single-page app: every other path serves the same document.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # The app has no frames, forms or plugins of its own.
+    X-Frame-Options = "DENY"
+
+# Vite fingerprints these filenames, so they can be cached indefinitely.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

@@ -95,6 +95,25 @@ the market list still renders without them, which is deliberate.
 
 No API key is required to run anything.
 
+## Deployment
+
+Frontend on Netlify, backend on Render, with `netlify.toml` proxying `/api/*`
+to the Render service so the browser stays same-origin and CORS never applies.
+Both sides are declared in `netlify.toml` and `render.yaml`; the walkthrough is
+[docs/DEPLOY.md](docs/DEPLOY.md).
+
+Two things that are easy to get wrong:
+
+- **The backend region must not be in the US.** Binance answers 451 to US IPs,
+  which silently demotes every request to the CryptoCompare fallback rather
+  than failing visibly. `render.yaml` pins Frankfurt.
+- **`netlify.toml` hard-codes the Render host.** There is no env-var
+  substitution in Netlify redirects, so that line is edited by hand when the
+  service URL changes.
+
+`npm run preview` serves the real build with the same proxy, which is the
+closest local mirror of the deployed site.
+
 ## Documentation
 
 - [docs/STATISTICS.md](docs/STATISTICS.md) — what every metric means and how to

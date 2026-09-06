@@ -163,6 +163,16 @@ python scripts/generate_assets.py noise
 Details and the API's traps are in [docs/ASSETS.md](docs/ASSETS.md). The running
 app never calls it, and no key is needed to use Vision.
 
+## Deployment
+
+The two halves are hosted separately: the frontend on Netlify, the Python
+backend on Render, with Netlify proxying `/api/*` through to it so the browser
+only ever sees one origin and no CORS is involved.
+
+[`render.yaml`](render.yaml) and [`netlify.toml`](netlify.toml) declare both
+sides; the full walkthrough, including why the backend region matters and how
+the free tier's cold start is handled, is in [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ## Configuration
 
 Everything is optional — the app runs with no `.env` at all. See

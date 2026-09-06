@@ -24,6 +24,9 @@ export const en = {
   "status.live": "ONLINE",
   "status.loading": "SYNC",
   "status.error": "NO LINK",
+  "status.waking": "WAKING THE BACKEND",
+  "status.wakingHint":
+    "The API runs on a free instance that sleeps after 15 minutes of quiet. The first request after that wakes it, which takes up to a minute. Later loads are instant.",
 
   // --- market list ---
   "markets.title": "MARKETS",
@@ -303,6 +306,9 @@ export const ru: Record<StringKey, string> = {
   "status.live": "НА СВЯЗИ",
   "status.loading": "ОБМЕН",
   "status.error": "НЕТ СВЯЗИ",
+  "status.waking": "БУДИМ СЕРВЕР",
+  "status.wakingHint":
+    "API работает на бесплатном сервере, который засыпает после 15 минут тишины. Первый запрос его будит, это занимает до минуты. Дальше загрузка мгновенная.",
 
   "markets.title": "РЫНКИ",
   "markets.filter": "ПОИСК ТИКЕРА",

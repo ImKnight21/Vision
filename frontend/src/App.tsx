@@ -96,7 +96,15 @@ export function App() {
           status={status}
         />
 
-        <div className="app__body">
+        {(overview.slow || markets.slow) && (
+        <p className="app__waking" role="status">
+          <span className="app__waking-spinner" aria-hidden="true" />
+          <strong>{i18n.t("status.waking")}</strong>
+          <span className="app__waking-hint">{i18n.t("status.wakingHint")}</span>
+        </p>
+      )}
+
+      <div className="app__body">
           <aside className="app__sidebar">{list}</aside>
 
           <main className="app__main">

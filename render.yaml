@@ -1,0 +1,36 @@
+# Render Blueprint for the Vision backend.
+#
+# Netlify hosts the frontend; the Python half cannot run there, so it lives
+# here. Create the service from this file with New > Blueprint in the Render
+# dashboard, pointed at this repository. See docs/DEPLOY.md.
+
+services:
+  - type: web
+    name: vision-api
+    runtime: python
+    # Frankfurt on purpose. Binance answers 451 to US IPs, so a US region would
+    # leave the primary candle source unreachable and quietly demote every
+    # request to the CryptoCompare fallback.
+    region: frankfurt
+    plan: free
+    rootDir: backend
+    buildCommand: pip install --no-cache-dir -r requirements.txt
+    # One worker: the TTL cache is per-process, so a second one would double the
+    # upstream calls and halve the hit rate for throughput this does not need.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Only needed if a browser calls this API directly. When the frontend
+      # reaches it through the Netlify proxy the request is same-origin and
+      # never triggers a CORS check.
+      - key: VISION_CORS_ORIGINS
+        value: https://dreamy-cobbler-61f5ac.netlify.app
+      # The free instance sleeps, so a cold request already costs ~50s. Keeping
+      # cached data a little longer makes the second visitor's page instant.
+      - key: VISION_TTL_MARKETS
+        value: "120"
+      - key: VISION_TTL_OHLCV
+        value: "300"

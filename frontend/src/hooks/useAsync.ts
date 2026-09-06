@@ -4,6 +4,17 @@ interface AsyncState<T> {
   data: T | null;
   error: Error | null;
   loading: boolean;
+  /**
+   * Still loading past `slowAfterMs`. Free hosting sleeps after inactivity and
+   * takes the better part of a minute to wake, which is indistinguishable from
+   * a hang unless the interface says so.
+   */
+  slow: boolean;
+}
+
+interface Options {
+  keepPrevious?: boolean;
+  slowAfterMs?: number;
 }
 
 /**
@@ -15,12 +26,13 @@ interface AsyncState<T> {
 export function useAsync<T>(
   fn: (signal: AbortSignal) => Promise<T>,
   deps: unknown[],
-  { keepPrevious = false }: { keepPrevious?: boolean } = {},
+  { keepPrevious = false, slowAfterMs = 4000 }: Options = {},
 ): AsyncState<T> & { reload: () => void } {
   const [state, setState] = useState<AsyncState<T>>({
     data: null,
     error: null,
     loading: true,
+    slow: false,
   });
   const [nonce, setNonce] = useState(0);
 
@@ -35,12 +47,21 @@ export function useAsync<T>(
       data: keepPrevious ? prev.data : null,
       error: null,
       loading: true,
+      slow: false,
     }));
+
+    const slowTimer = window.setTimeout(() => {
+      if (!controller.signal.aborted) {
+        setState((prev) => (prev.loading ? { ...prev, slow: true } : prev));
+      }
+    }, slowAfterMs);
 
     fnRef
       .current(controller.signal)
       .then((data) => {
-        if (!controller.signal.aborted) setState({ data, error: null, loading: false });
+        if (!controller.signal.aborted) {
+          setState({ data, error: null, loading: false, slow: false });
+        }
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -48,10 +69,15 @@ export function useAsync<T>(
           data: null,
           error: error instanceof Error ? error : new Error(String(error)),
           loading: false,
+          slow: false,
         });
-      });
+      })
+      .finally(() => window.clearTimeout(slowTimer));
 
-    return () => controller.abort();
+    return () => {
+      window.clearTimeout(slowTimer);
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, nonce]);
 
