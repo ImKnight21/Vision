@@ -9,6 +9,10 @@ technical indicators.
 Informational only. Every number is derived from historical candles and says
 nothing about what happens next.
 
+**Live: [vision-595f88.netlify.app](https://vision-595f88.netlify.app)** — the
+API sleeps after 15 minutes idle on the free tier, so a first visit can take
+about a minute to wake it. The interface says so while it waits.
+
 ![the terminal](docs/screenshot-desktop.png)
 
 ## Stack

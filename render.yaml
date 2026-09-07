@@ -27,7 +27,7 @@ services:
       # reaches it through the Netlify proxy the request is same-origin and
       # never triggers a CORS check.
       - key: VISION_CORS_ORIGINS
-        value: https://dreamy-cobbler-61f5ac.netlify.app
+        value: https://vision-595f88.netlify.app
       # The free instance sleeps, so a cold request already costs ~50s. Keeping
       # cached data a little longer makes the second visitor's page instant.
       - key: VISION_TTL_MARKETS

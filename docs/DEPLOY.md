@@ -73,8 +73,8 @@ everything on one origin. Commit and push.
 
 ## 3. Frontend on Netlify
 
-The site already exists as `dreamy-cobbler-61f5ac`. Link the repository to it
-rather than creating a second site:
+The live site is `vision-595f88`. To deploy from a fresh site, or to relink
+this one:
 
 1. **Site configuration > Build & deploy > Continuous deployment > Link
    repository**, and pick `ImKnight21/Vision`.
@@ -88,7 +88,7 @@ From then on every push to `main` rebuilds the site.
 Afterwards, check that the proxy is live:
 
 ```bash
-curl -s https://dreamy-cobbler-61f5ac.netlify.app/api/health
+curl -s https://vision-595f88.netlify.app/api/health
 ```
 
 That request never touches Render directly; if it answers, the proxy works.
