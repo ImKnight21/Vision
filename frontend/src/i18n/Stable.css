@@ -1,0 +1,20 @@
+/* Every variant occupies the same cell, so the box is as wide as the longest
+   translation and the layout stops depending on the language. */
+.stable {
+  display: inline-grid;
+  grid-template-areas: "text";
+  white-space: nowrap;
+}
+
+.stable[data-align="start"] { justify-items: start; }
+.stable[data-align="center"] { justify-items: center; }
+.stable[data-align="end"] { justify-items: end; }
+
+.stable__variant {
+  grid-area: text;
+  visibility: hidden;
+}
+
+.stable__variant[data-active] {
+  visibility: visible;
+}

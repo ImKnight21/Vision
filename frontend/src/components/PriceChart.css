@@ -16,7 +16,11 @@
   position: absolute;
   top: var(--space-2);
   left: var(--space-3);
-  right: var(--space-3);
+  /* Stop short of the price axis. The axis is drawn across the full height,
+     including the strip the legend sits in, so a legend running to the panel
+     edge prints over the price labels. `--chart-scale-width` is published by
+     the chart itself because the axis is only as wide as its widest number. */
+  right: calc(var(--chart-scale-width, 0px) + var(--space-2));
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
@@ -51,16 +55,26 @@
   margin: 0;
   font-size: var(--step--1);
   letter-spacing: 0.14em;
+  color: var(--text-dim);
+}
+
+/* Brighter only while the poll is actually delivering. A chart that has lost
+   the feed still shows the forming bar, but it must not claim to be current. */
+.chart__live--streaming {
   color: var(--phosphor);
 }
 
-/* The one pulsing element in the interface, and it earns it: this bar is
-   genuinely still changing. */
 .chart__live-dot {
   width: 6px;
   height: 6px;
   background: currentColor;
   box-shadow: var(--glow-soft);
+}
+
+/* The one pulsing element in the interface, and it earns it: the bar really is
+   changing under it. It stops when the feed does, so the pulse is a signal
+   rather than decoration. */
+.chart__live--streaming .chart__live-dot {
   animation: chart-pulse 2s ease-in-out infinite;
 }
 
@@ -88,5 +102,13 @@
   .chart__legend {
     gap: var(--space-1) var(--space-2);
     font-size: var(--step--1);
+  }
+
+  /* Volume is the field that carries least here, and it is already drawn as
+     the histogram along the bottom of the same chart. Dropping it takes the
+     legend from three rows to two, which keeps it inside the margin reserved
+     above the plot instead of printing over the candles. */
+  .chart__field--volume {
+    display: none;
   }
 }

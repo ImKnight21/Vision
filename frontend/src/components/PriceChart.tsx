@@ -6,6 +6,7 @@ import {
   type CandlestickData,
   type HistogramData,
   type IChartApi,
+  type ISeriesApi,
   type LineData,
   type Time,
   type UTCTimestamp,
@@ -22,6 +23,10 @@ interface Props {
   phosphor: string;
   showVolume: boolean;
   showMovingAverages: boolean;
+  /** Newest bars from the live poll, merged onto the tail of `candles`. */
+  live?: Candle[] | null;
+  /** True while the poll is actually delivering. */
+  streaming?: boolean;
 }
 
 /** A bar with every OHLC field present, which is what the chart can draw. */
@@ -31,6 +36,13 @@ type SolidCandle = Candle & {
   low: number;
   close: number;
 };
+
+function solid(candles: Candle[]): SolidCandle[] {
+  return candles.filter(
+    (c): c is SolidCandle =>
+      c.open != null && c.high != null && c.low != null && c.close != null,
+  );
+}
 
 /** Read a design token so the chart matches the rest of the terminal. */
 function token(name: string, fallback: string): string {
@@ -55,24 +67,39 @@ function movingAverage(candles: SolidCandle[], window: number): LineData<Time>[]
   return out;
 }
 
-export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }: Props) {
+export function PriceChart({
+  candles,
+  phosphor,
+  showVolume,
+  showMovingAverages,
+  live,
+  streaming = false,
+}: Props) {
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const priceRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
 
   /** Timestamp of the bar under the cursor; null when the cursor is away. */
   const [hoveredTime, setHoveredTime] = useState<number | null>(null);
 
-  const bars = useMemo(
-    () =>
-      candles.filter(
-        (c): c is SolidCandle =>
-          c.open != null && c.high != null && c.low != null && c.close != null,
-      ),
-    [candles],
-  );
+  const bars = useMemo(() => solid(candles), [candles]);
+  const liveBars = useMemo(() => solid(live ?? []), [live]);
 
-  const byTime = useMemo(() => new Map(bars.map((c) => [c.time, c])), [bars]);
+  // What the legend reads. The chart itself is not rebuilt for a live bar --
+  // that is pushed through `series.update` below -- so this merge exists only
+  // so the hover readout and the LIVE row agree with what is drawn.
+  const shownBars = useMemo(() => {
+    if (!liveBars.length) return bars;
+    const cutoff = liveBars[0]!.time;
+    return [...bars.filter((c) => c.time < cutoff), ...liveBars];
+  }, [bars, liveBars]);
+
+  const byTime = useMemo(
+    () => new Map(shownBars.map((c) => [c.time, c])),
+    [shownBars],
+  );
 
   useEffect(() => {
     const container = containerRef.current;
@@ -125,6 +152,7 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
       priceLineColor: phosphorColor,
       priceLineStyle: 2,
     });
+    priceRef.current = priceSeries;
 
     priceSeries.setData(
       bars.map<CandlestickData<Time>>((c) => ({
@@ -144,6 +172,7 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
         priceLineVisible: false,
         lastValueVisible: false,
       });
+      volumeRef.current = volumeSeries;
       volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
       volumeSeries.setData(
         bars
@@ -183,13 +212,64 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
 
     chart.timeScale().fitContent();
 
+    // The legend floats over the plot, and the price axis is drawn across the
+    // full height including the strip the legend sits in. Publish the axis
+    // width so the legend can stop short of it instead of printing over the
+    // price labels, which is what it did on a narrow screen.
+    const publishScaleWidth = () => {
+      const width = chart.priceScale("right").width();
+      // Set on the parent, not the canvas: the legend is the canvas's sibling
+      // and would never see a property declared on it.
+      container.parentElement?.style.setProperty(
+        "--chart-scale-width",
+        `${Math.ceil(width)}px`,
+      );
+    };
+    publishScaleWidth();
+    const observer = new ResizeObserver(publishScaleWidth);
+    observer.observe(container);
+
     return () => {
+      observer.disconnect();
       chart.remove();
       chartRef.current = null;
+      priceRef.current = null;
+      volumeRef.current = null;
     };
   }, [bars, phosphor, showVolume, showMovingAverages]);
 
-  const latest = bars.length ? bars[bars.length - 1]! : null;
+  // Push the live bar into the existing series. `update` replaces the last bar
+  // when the timestamp matches and appends when it is newer, so rebuilding the
+  // chart -- and throwing away the viewer's pan and zoom -- is never needed.
+  useEffect(() => {
+    const series = priceRef.current;
+    if (!series || !liveBars.length) return;
+
+    const newest = bars.length ? bars[bars.length - 1]!.time : 0;
+    for (const bar of liveBars) {
+      // A bar older than the loaded history would be an out-of-order update,
+      // which lightweight-charts rejects by throwing.
+      if (bar.time < newest) continue;
+      series.update({
+        time: bar.time as UTCTimestamp,
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+      });
+      if (volumeRef.current && bar.volume != null) {
+        const up = token("--up", "#4dff85");
+        const down = token("--down", "#ff7a68");
+        volumeRef.current.update({
+          time: bar.time as UTCTimestamp,
+          value: bar.volume,
+          color: bar.close >= bar.open ? `${up}44` : `${down}44`,
+        });
+      }
+    }
+  }, [liveBars, bars]);
+
+  const latest = shownBars.length ? shownBars[shownBars.length - 1]! : null;
   const shown = (hoveredTime != null ? byTime.get(hoveredTime) : null) ?? latest;
   // The newest bar of a live feed is still forming, so say so rather than
   // presenting an in-progress close as a settled one.
@@ -206,12 +286,19 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
           <Field label={t("chart.close")} value={price(shown.close)} tone={signClass(change)} />
           <Field label={t("chart.change")} value={percent(change)} tone={signClass(change)} />
           {shown.volume != null && (
-            <Field label={t("chart.volume")} value={compact(shown.volume)} />
+            <Field
+              label={t("chart.volume")}
+              value={compact(shown.volume)}
+              className="chart__field--volume"
+            />
           )}
           {isLive && (
-            <dd className="chart__live" title={t("chart.liveHint")}>
+            <dd
+              className={`chart__live${streaming ? " chart__live--streaming" : ""}`}
+              title={streaming ? t("chart.streamingHint") : t("chart.liveHint")}
+            >
               <span className="chart__live-dot" aria-hidden="true" />
-              {t("chart.live")}
+              {streaming ? t("chart.streaming") : t("chart.live")}
             </dd>
           )}
         </dl>
@@ -223,9 +310,19 @@ export function PriceChart({ candles, phosphor, showVolume, showMovingAverages }
   );
 }
 
-function Field({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function Field({
+  label,
+  value,
+  tone,
+  className,
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+  className?: string;
+}) {
   return (
-    <div className="chart__field">
+    <div className={`chart__field${className ? ` ${className}` : ""}`}>
       <dt className="chart__field-label">{label}</dt>
       <dd className={`chart__field-value ${tone ?? ""}`}>{value}</dd>
     </div>

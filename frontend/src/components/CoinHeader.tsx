@@ -1,17 +1,21 @@
 import type { MarketRow, Stats } from "../api/types";
 import { useI18n } from "../i18n/useI18n";
-import { compact, percent, price, shortDate, signClass } from "../lib/format";
+import { percent, price, signClass } from "../lib/format";
 import "./CoinHeader.css";
 
 interface Props {
   symbol: string;
   market: MarketRow | undefined;
   stats: Stats | null;
+  /** Close of the forming bar, when the live poll is delivering one. */
+  livePrice?: number | null;
 }
 
-export function CoinHeader({ symbol, market, stats }: Props) {
+export function CoinHeader({ symbol, market, stats, livePrice }: Props) {
   const { t } = useI18n();
-  const last = stats?.price.last ?? market?.price ?? null;
+  // The live close is the most current figure available; the loaded history
+  // and the market ticker are both minutes old by comparison.
+  const last = livePrice ?? stats?.price.last ?? market?.price ?? null;
 
   const deltas = [
     { key: "24H", value: market?.change_24h ?? stats?.price.change_1d ?? null },
@@ -49,29 +53,6 @@ export function CoinHeader({ symbol, market, stats }: Props) {
           </li>
         ))}
       </ul>
-
-      <dl className="coin__facts">
-        <Fact label={t("coin.marketCap")} value={market?.market_cap != null ? `$${compact(market.market_cap)}` : "--"} />
-        <Fact label={t("coin.volume24h")} value={market?.volume_24h != null ? `$${compact(market.volume_24h)}` : "--"} />
-        <Fact label={t("coin.ath")} value={market?.ath != null ? `$${price(market.ath)}` : "--"} />
-        <Fact
-          label={t("coin.fromAth")}
-          value={percent(market?.ath_change)}
-          tone={signClass(market?.ath_change)}
-        />
-        <Fact label={t("coin.bars")} value={stats ? String(stats.bars) : "--"} />
-        <Fact label={t("coin.since")} value={shortDate(stats?.period_start)} />
-        <Fact label={t("coin.feed")} value={(stats?.source ?? market?.source ?? "--").toUpperCase()} />
-      </dl>
     </section>
-  );
-}
-
-function Fact({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="coin__fact">
-      <dt className="coin__fact-label">{label}</dt>
-      <dd className={`coin__fact-value ${tone ?? ""}`}>{value}</dd>
-    </div>
   );
 }

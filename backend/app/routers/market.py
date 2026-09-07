@@ -49,6 +49,25 @@ async def get_ohlcv(
     }
 
 
+@router.get("/latest/{symbol}", summary="The newest bar, for a live chart")
+async def get_latest(
+    symbol: str = Path(..., pattern=SYMBOL_PATTERN, examples=["BTCUSDT"]),
+    interval: str = Query("1d"),
+) -> dict:
+    """The forming candle, cached for a few seconds.
+
+    Polled on a timer by every open chart, so it deliberately returns two bars
+    and nothing else: no statistics, no metadata, nothing that would make a
+    5-second poll expensive.
+    """
+    try:
+        return await service.get_latest(symbol, interval)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except UpstreamError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
 @router.get("/stats/{symbol}", summary="Full statistical profile for one pair")
 async def get_stats(
     symbol: str = Path(..., pattern=SYMBOL_PATTERN, examples=["BTCUSDT"]),

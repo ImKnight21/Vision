@@ -90,6 +90,20 @@
     padding: var(--space-2);
     gap: var(--space-2);
   }
+
+  /* The chart is what the page is for, and on a phone it sat roughly 900px
+     below the fold behind the reference data. Here the ticker and its price
+     come first, then the chart, and the capitalisation, high and provenance
+     follow underneath.
+
+     Everything unlisted keeps its document order: equal `order` values fall
+     back to source order, which is why the default is set once rather than
+     numbering each remaining panel by hand. */
+  .app__main > * { order: 4; }
+  .app__main > .coin { order: 0; }
+  .app__main > .controls { order: 1; }
+  .app__main > .app__chart { order: 2; }
+  .app__main > .facts { order: 3; }
 }
 
 .app__drawer {

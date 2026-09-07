@@ -1,6 +1,7 @@
 import { useClock } from "../hooks/useClock";
 import type { Fx, Phosphor } from "../hooks/useDisplay";
 import { useI18n } from "../i18n/useI18n";
+import { Stable } from "../i18n/Stable";
 import type { StringKey } from "../i18n/dictionary";
 import "./Header.css";
 
@@ -20,6 +21,10 @@ const STATUS_KEY: Record<Props["status"], StringKey> = {
   loading: "status.loading",
   error: "status.error",
 };
+
+/** The status text changes with the connection as well as with the language,
+ *  so the slot reserves room for the longest of all six combinations. */
+const STATUS_KEYS = Object.values(STATUS_KEY);
 
 export function Header({
   phosphor,
@@ -50,7 +55,7 @@ export function Header({
           className="header__button header__button--markets"
           onClick={onOpenMarkets}
         >
-          {t("header.markets")}
+          <Stable show="header.markets" align="center" />
         </button>
 
         <button
@@ -59,7 +64,11 @@ export function Header({
           onClick={onOpenCompare}
           aria-pressed={compareOpen}
         >
-          {compareOpen ? t("compare.close") : t("compare.open")}
+          <Stable
+            show={compareOpen ? "compare.close" : "compare.open"}
+            among={["compare.open", "compare.close"]}
+            align="center"
+          />
         </button>
 
         <button
@@ -68,7 +77,9 @@ export function Header({
           onClick={toggleLocale}
           title={t("header.langHint")}
         >
-          <span className="header__key">{t("header.lang")}:</span>
+          <span className="header__key">
+            <Stable show="header.lang" align="end" />:
+          </span>
           {locale.toUpperCase()}
         </button>
 
@@ -78,7 +89,9 @@ export function Header({
           onClick={onTogglePhosphor}
           aria-label={`Switch to ${phosphor === "green" ? "amber" : "green"} phosphor`}
         >
-          <span className="header__key">{t("header.tube")}:</span>
+          <span className="header__key">
+            <Stable show="header.tube" align="end" />:
+          </span>
           {phosphor === "green" ? "P1" : "P3"}
         </button>
 
@@ -89,13 +102,15 @@ export function Header({
           aria-pressed={fx === "on"}
           title={t("header.fxHint")}
         >
-          <span className="header__key">{t("header.fx")}:</span>
+          <span className="header__key">
+            <Stable show="header.fx" align="end" />:
+          </span>
           {fx.toUpperCase()}
         </button>
 
         <span className={`header__status header__status--${status}`}>
           <span className="header__dot" aria-hidden="true" />
-          {t(STATUS_KEY[status])}
+          <Stable show={STATUS_KEY[status]} among={STATUS_KEYS} align="start" />
         </span>
 
         <time className="header__clock" dateTime={clock}>

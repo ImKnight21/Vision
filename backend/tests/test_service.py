@@ -128,3 +128,47 @@ async def test_ranked_coins_sort_before_unranked(monkeypatch, stub_tickers):
 async def test_rejects_unknown_interval():
     with pytest.raises(ValueError):
         await service.get_ohlcv("BTCUSDT", "1y", 100)
+
+
+@pytest.mark.asyncio
+async def test_metadata_survives_the_market_list_expiring(monkeypatch, stub_tickers):
+    """CoinGecko is rate-limited on shared hosting: most fetches are refused.
+
+    Metadata therefore gets its own long-lived cache entry. Without it a single
+    success was discarded with the two-minute market entry, and the next fetch
+    was likely to be refused, which is what showed up as a table with no logos.
+    """
+    calls = []
+
+    async def fake_markets(per_page=250, page=1):
+        calls.append(per_page)
+        return list(META)
+
+    monkeypatch.setattr(coingecko, "fetch_markets", fake_markets)
+
+    await service.get_markets(10)
+    # Expire the market list but not the metadata beneath it.
+    cache.invalidate("markets")
+    rows = await service.get_markets(10)
+
+    assert len(calls) == 1, "metadata was refetched instead of being reused"
+    assert next(r for r in rows if r["symbol"] == "BTCUSDT")["name"] == "Bitcoin"
+
+
+@pytest.mark.asyncio
+async def test_a_refused_metadata_fetch_is_not_cached(monkeypatch, stub_tickers):
+    """A refusal must not be stored, or one 429 would blank the names for an
+    hour -- exactly the failure the cache was added to prevent."""
+    attempts = []
+
+    async def refused(per_page=250, page=1):
+        attempts.append(1)
+        raise UpstreamError("coingecko", "HTTP 429")
+
+    monkeypatch.setattr(coingecko, "fetch_markets", refused)
+
+    await service.get_markets(10)
+    cache.invalidate("markets")
+    await service.get_markets(10)
+
+    assert len(attempts) == 2

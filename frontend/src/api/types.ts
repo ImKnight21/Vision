@@ -34,6 +34,15 @@ export interface Candle {
   volume: number | null;
 }
 
+/** The tail of the series, polled on a timer to keep the chart current. */
+export interface Latest {
+  symbol: string;
+  interval: string;
+  source: string;
+  /** The forming bar, preceded by the one before it. */
+  candles: Candle[];
+}
+
 /** A statistic measured over several lookbacks. `all` covers the whole series. */
 export interface WindowedStat {
   "7d": number | null;

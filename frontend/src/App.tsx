@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "./api/client";
+import { CoinFacts } from "./components/CoinFacts";
 import { CoinHeader } from "./components/CoinHeader";
 import { ComparePanel } from "./components/ComparePanel";
 import { Header } from "./components/Header";
@@ -8,6 +9,7 @@ import { MarketList } from "./components/MarketList";
 import { PriceChart } from "./components/PriceChart";
 import { StatsPanels } from "./components/StatsPanels";
 import { useAsync } from "./hooks/useAsync";
+import { useLiveCandle } from "./hooks/useLiveCandle";
 import { useCrtEffects, useLocale, usePhosphor } from "./hooks/useDisplay";
 import { I18nContext, translator } from "./i18n/useI18n";
 import "./App.css";
@@ -46,6 +48,17 @@ export function App() {
     [symbol, interval, bars],
     { keepPrevious: true },
   );
+
+  // The chart keeps itself current by polling the forming bar. It waits for
+  // the history to arrive first: starting both at once would put a second
+  // request in front of a cold backend that is already slow to wake.
+  const live = useLiveCandle(symbol, interval, {
+    enabled: overview.data != null,
+  });
+
+  const livePrice = live.candles?.length
+    ? (live.candles[live.candles.length - 1]?.close ?? null)
+    : null;
 
   const selectedMarket = useMemo(
     () => markets.data?.markets.find((row) => row.symbol === symbol),
@@ -112,7 +125,10 @@ export function App() {
               symbol={symbol}
               market={selectedMarket}
               stats={overview.data?.stats ?? null}
+              livePrice={livePrice}
             />
+
+            <CoinFacts market={selectedMarket} stats={overview.data?.stats ?? null} />
 
             <IntervalPicker
               intervals={INTERVALS}
@@ -140,6 +156,8 @@ export function App() {
                 phosphor={`${phosphor}-${fx}`}
                 showVolume={showVolume}
                 showMovingAverages={showMovingAverages}
+                live={live.candles}
+                streaming={live.streaming}
               />
             </section>
 

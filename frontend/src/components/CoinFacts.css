@@ -1,0 +1,45 @@
+.facts {
+  padding: var(--space-3);
+}
+
+.facts__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+
+.facts__item {
+  min-width: 0;
+}
+
+.facts__label {
+  font-size: var(--step--1);
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+}
+
+.facts__value {
+  margin: 0;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* On a wide screen this reads as the lower half of the coin panel above it.
+   The two are separate elements only so that `order` can move this one below
+   the chart on a phone; here they are pulled flush and share one rule, which
+   is the coin panel's own bottom border. */
+@media (min-width: 961px) {
+  .facts {
+    margin-top: calc(-1 * var(--space-3));
+    border-top: none;
+  }
+
+  /* Corner brackets mark the outside of the pair, never the seam. */
+  .facts::before,
+  .coin::after {
+    display: none;
+  }
+}

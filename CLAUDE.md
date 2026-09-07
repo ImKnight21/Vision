@@ -20,7 +20,7 @@ The dev server binds `localhost`, which resolves to IPv6 on Windows —
 ## Check it
 
 ```bash
-cd backend  && .venv/Scripts/python.exe -m pytest   # 62 tests, no network
+cd backend  && .venv/Scripts/python.exe -m pytest   # 89 tests, no network
 cd frontend && npm run typecheck && npm run build
 ```
 
@@ -77,6 +77,23 @@ would otherwise re-read the previous theme's palette. See
   so a missing translation is a compile error. **No user-visible string belongs
   anywhere else.**
 
+**No user-visible string may change the layout when the language changes.**
+Wrap text that varies between locales in `<Stable>` (`i18n/Stable.tsx`): it
+renders every locale's variant into one grid cell and hides all but the active
+one, so the box is as wide as the longest translation whichever is showing.
+Hand-written `min-width` values are not acceptable here -- they have to be
+re-measured by a person whenever a translation changes, and silently stop being
+true when nobody does. Measured before this existed: switching to English moved
+the header controls by up to 93px.
+
+**On a phone the chart comes before the reference data.** `CoinHeader` and
+`CoinFacts` are separate sections purely so `order` can put the chart between
+them below 960px; on wider screens CSS pulls them flush so they read as one
+panel. Do not merge them back together.
+
+**Touch targets are keyed on `(pointer: coarse)`, not on viewport width.** A
+touchscreen tablet is wide and still has no cursor.
+
 **Em dashes are banned in user-visible text.** They are the clearest tell of
 generated copy and they render inconsistently in a monospace column. Use a
 period, a comma, a colon, or `--`. Code comments are exempt.
@@ -105,8 +122,21 @@ free host the ban is the normal case, not an exotic one. That is what Bybit is
 insurance against. Before Bybit existed the chain fell to CryptoCompare, which
 `401`s, and the whole site returned 502.
 
-CoinGecko supplies names, logos and market cap; if it is rate-limited the
-market list still renders without them, which is deliberate.
+CoinGecko supplies names, logos and market cap. Its free tier rate-limits a
+shared hosting IP hard: measured 3 successes in 8 attempts from Render, the
+refusals arriving in under a second rather than exhausting the budget. So the
+metadata has **its own hour-long cache entry**, separate from the two-minute
+market list. Tying the two together threw away every success within minutes and
+showed as a table with no logos. A refusal is never cached, or one 429 would
+blank the names for an hour. If it is still unavailable the market list renders
+without those fields, which is deliberate.
+
+`/api/latest/{symbol}` serves the forming bar alone, cached for `ttl_live`
+(5 seconds). It is polled by every open chart, so it deliberately carries no
+statistics. It is a separate cache entry from `/api/ohlcv`, which caches for
+minutes because settled history does not change; one entry for both would force
+a choice between a stale chart and refetching hundreds of bars every few
+seconds. The client stops polling while the tab is hidden.
 
 **Leveraged tokens are excluded, but the suffix alone is not evidence.** JUP
 (Jupiter, ~$18M daily) and SYRUP both end in `UP`, and BEAR and BULL are coins

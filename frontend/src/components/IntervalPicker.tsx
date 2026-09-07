@@ -1,4 +1,4 @@
-import { useI18n } from "../i18n/useI18n";
+import { Stable } from "../i18n/Stable";
 import "./IntervalPicker.css";
 
 interface Props {
@@ -26,12 +26,12 @@ export function IntervalPicker({
   showMovingAverages,
   onShowMovingAveragesChange,
 }: Props) {
-  const { t } = useI18n();
-
   return (
     <div className="controls panel">
       <fieldset className="controls__group">
-        <legend className="controls__legend">{t("controls.interval")}</legend>
+        <legend className="controls__legend">
+          <Stable show="controls.interval" />
+        </legend>
         {intervals.map((interval) => (
           <button
             key={interval}
@@ -46,7 +46,9 @@ export function IntervalPicker({
       </fieldset>
 
       <fieldset className="controls__group">
-        <legend className="controls__legend">{t("controls.bars")}</legend>
+        <legend className="controls__legend">
+          <Stable show="controls.bars" />
+        </legend>
         {BAR_CHOICES.map((choice) => (
           <button
             key={choice}
@@ -61,14 +63,16 @@ export function IntervalPicker({
       </fieldset>
 
       <fieldset className="controls__group">
-        <legend className="controls__legend">{t("controls.overlay")}</legend>
+        <legend className="controls__legend">
+          <Stable show="controls.overlay" />
+        </legend>
         <button
           type="button"
           className={`controls__chip${showVolume ? " controls__chip--on" : ""}`}
           onClick={() => onShowVolumeChange(!showVolume)}
           aria-pressed={showVolume}
         >
-          {t("controls.volume")}
+          <Stable show="controls.volume" align="center" />
         </button>
         <button
           type="button"
@@ -76,7 +80,7 @@ export function IntervalPicker({
           onClick={() => onShowMovingAveragesChange(!showMovingAverages)}
           aria-pressed={showMovingAverages}
         >
-          {t("controls.movingAverages")}
+          <Stable show="controls.movingAverages" align="center" />
         </button>
       </fieldset>
     </div>

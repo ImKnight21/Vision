@@ -244,3 +244,54 @@ def test_real_coins_survive_the_filter(base):
     trade, which is what separates them from a wrapper.
     """
     assert not is_leveraged(base, BASES)
+
+
+# --------------------------------------------------------------------------
+#  The live bar
+# --------------------------------------------------------------------------
+
+
+async def test_latest_returns_the_newest_bars_only(monkeypatch):
+    calls = []
+
+    async def fetch(symbol, interval, limit=500):
+        calls.append(limit)
+        return frame_from("binance")
+
+    monkeypatch.setattr(binance, "fetch_ohlcv", fetch)
+
+    payload = await service.get_latest("BTCUSDT", "1d")
+
+    assert payload["symbol"] == "BTCUSDT"
+    assert payload["source"] == "binance"
+    # Two bars, so a boundary crossed between polls still yields the bar that
+    # just closed rather than skipping it.
+    assert calls == [2]
+    assert payload["candles"][-1]["close"] == 3.5
+
+
+async def test_live_and_history_do_not_share_a_cache_entry(monkeypatch):
+    """The forming bar expires in seconds; the settled history does not.
+
+    One entry for both would force a choice between a stale chart and
+    refetching every bar on every poll, so this asserts they stay separate.
+    """
+    seen = []
+
+    async def fetch(symbol, interval, limit=500):
+        seen.append(limit)
+        return frame_from("binance")
+
+    monkeypatch.setattr(binance, "fetch_ohlcv", fetch)
+
+    await service.get_ohlcv("BTCUSDT", "1d", 500)
+    await service.get_latest("BTCUSDT", "1d")
+    # A second poll is served from the live entry, not from the history one.
+    await service.get_latest("BTCUSDT", "1d")
+
+    assert seen == [500, 2]
+
+
+async def test_latest_rejects_an_unknown_interval():
+    with pytest.raises(ValueError, match="unsupported interval"):
+        await service.get_latest("BTCUSDT", "7y")

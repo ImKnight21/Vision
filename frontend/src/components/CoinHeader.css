@@ -78,33 +78,6 @@
   color: var(--text-faint);
 }
 
-.coin__facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
-  gap: var(--space-2) var(--space-4);
-  margin: var(--space-3) 0 0;
-  padding-top: var(--space-3);
-  border-top: var(--border);
-}
-
-.coin__fact {
-  min-width: 0;
-}
-
-.coin__fact-label {
-  font-size: var(--step--1);
-  letter-spacing: 0.12em;
-  color: var(--text-faint);
-}
-
-.coin__fact-value {
-  margin: 0;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 @media (max-width: 720px) {
   .coin__identity {
     align-items: flex-start;

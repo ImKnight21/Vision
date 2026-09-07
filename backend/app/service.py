@@ -57,8 +57,22 @@ async def get_markets(limit: int = 100) -> list[dict]:
         # stack up to the better part of a minute — long enough to hold the
         # whole market list hostage for data the table renders fine without.
         async def metadata() -> list[dict]:
+            # Cached under its own key, for far longer than the market list.
+            # Names, logos and market caps change on a scale of days, while
+            # CoinGecko's free tier rate-limits a shared hosting IP hard enough
+            # that only some fetches get through: measured 3 successes in 8
+            # attempts from Render, the failures arriving in under a second
+            # rather than exhausting the budget. Tying metadata to the
+            # two-minute market entry discarded every success within minutes
+            # and made those refusals visible as a table with no logos. One
+            # success now covers an hour.
             return await asyncio.wait_for(
-                coingecko.fetch_markets(per_page=250), timeout=settings.meta_budget
+                cache.get_or_set(
+                    "coingecko:markets",
+                    settings.ttl_meta,
+                    lambda: coingecko.fetch_markets(per_page=250),
+                ),
+                timeout=settings.meta_budget,
             )
 
         async def prices() -> list[dict]:
@@ -131,8 +145,28 @@ async def get_markets(limit: int = 100) -> list[dict]:
     return rows[:limit]
 
 
+async def _fetch_from_any_source(
+    symbol: str, interval: str, limit: int
+) -> pd.DataFrame:
+    """Walk `OHLCV_SOURCES` until one answers, or report what each one said."""
+    failures: list[str] = []
+    for source in OHLCV_SOURCES:
+        try:
+            return await source.fetch_ohlcv(symbol, interval, limit)
+        except UpstreamError as exc:
+            failures.append(f"{source.PROVIDER}: {exc}")
+            log.warning(
+                "%s failed for %s %s (%s); trying the next source",
+                source.PROVIDER, symbol, interval, exc,
+            )
+    raise UpstreamError(
+        "vision",
+        f"no source could serve {symbol} {interval} ({'; '.join(failures)})",
+    )
+
+
 async def get_ohlcv(symbol: str, interval: str, limit: int = 500) -> pd.DataFrame:
-    """Candles for `symbol`, falling back to CryptoCompare if Binance fails."""
+    """Candles for `symbol`, from the first source in the chain that answers."""
     if interval not in VALID_INTERVALS:
         raise ValueError(f"unsupported interval {interval!r}")
 
@@ -140,23 +174,42 @@ async def get_ohlcv(symbol: str, interval: str, limit: int = 500) -> pd.DataFram
     settings = get_settings()
 
     async def produce() -> pd.DataFrame:
-        failures: list[str] = []
-        for source in OHLCV_SOURCES:
-            try:
-                return await source.fetch_ohlcv(symbol, interval, limit)
-            except UpstreamError as exc:
-                failures.append(f"{source.PROVIDER}: {exc}")
-                log.warning(
-                    "%s failed for %s %s (%s); trying the next source",
-                    source.PROVIDER, symbol, interval, exc,
-                )
-        raise UpstreamError(
-            "vision",
-            f"no source could serve {symbol} {interval} ({'; '.join(failures)})",
-        )
+        return await _fetch_from_any_source(symbol, interval, limit)
 
     return await cache.get_or_set(
         f"ohlcv:{symbol}:{interval}:{limit}", settings.ttl_ohlcv, produce
+    )
+
+
+async def get_latest(symbol: str, interval: str) -> dict:
+    """The newest bar alone, for a chart that wants to stay current.
+
+    Kept separate from `get_ohlcv` on purpose. That one caches for minutes
+    because a settled history does not change; this bar is still forming and
+    is cached for seconds. Sharing a cache entry would force a choice between
+    a stale chart and refetching hundreds of bars every few seconds.
+
+    Two bars are requested rather than one: an interval boundary can land
+    between polls, and the extra bar is what lets the client draw the newly
+    closed candle instead of skipping it.
+    """
+    if interval not in VALID_INTERVALS:
+        raise ValueError(f"unsupported interval {interval!r}")
+
+    symbol = symbol.upper()
+    settings = get_settings()
+
+    async def produce() -> dict:
+        frame = await _fetch_from_any_source(symbol, interval, 2)
+        return {
+            "symbol": symbol,
+            "interval": interval,
+            "source": frame.attrs.get("source", "unknown"),
+            "candles": frame_to_candles(frame),
+        }
+
+    return await cache.get_or_set(
+        f"live:{symbol}:{interval}", settings.ttl_live, produce
     )
 
 

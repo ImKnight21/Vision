@@ -1,4 +1,4 @@
-import type { Comparison, IntervalOption, MarketRow, Overview } from "./types";
+import type { Comparison, IntervalOption, Latest, MarketRow, Overview } from "./types";
 
 /** In dev the Vite proxy serves /api; in production set VITE_API_BASE_URL. */
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -49,6 +49,13 @@ export const api = {
     request<Comparison>(
       `/api/compare?symbols=${encodeURIComponent(symbols.join(","))}` +
         `&interval=${interval}&limit=${limit}`,
+      signal,
+    ),
+
+  /** The forming bar. Polled on a timer, so it carries no statistics. */
+  latest: (symbol: string, interval: string, signal?: AbortSignal) =>
+    request<Latest>(
+      `/api/latest/${encodeURIComponent(symbol)}?interval=${interval}`,
       signal,
     ),
 

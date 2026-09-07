@@ -64,6 +64,9 @@ export const en = {
   "chart.change": "CHG",
   "chart.live": "LIVE",
   "chart.liveHint": "The candle currently forming. It is not closed yet.",
+  "chart.streaming": "STREAM",
+  "chart.streamingHint":
+    "The forming candle, refreshed every few seconds from the exchange.",
 
   // --- panels ---
   "panel.volatility": "VOLATILITY",
@@ -342,6 +345,9 @@ export const ru: Record<StringKey, string> = {
   "chart.change": "ИЗМ",
   "chart.live": "СЕЙЧАС",
   "chart.liveHint": "Текущая формирующаяся свеча. Она ещё не закрыта.",
+  "chart.streaming": "ЭФИР",
+  "chart.streamingHint":
+    "Формирующаяся свеча, обновляется с биржи каждые несколько секунд.",
 
   "panel.volatility": "ВОЛАТИЛЬНОСТЬ",
   "panel.volatilityNote": "годовая",

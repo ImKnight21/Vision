@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     ttl_markets: int = 60
     ttl_ohlcv: int = 120
     ttl_meta: int = 3600
+    # The forming bar, polled by every open chart. Short enough to look live,
+    # long enough that a hundred viewers still cost one upstream call per tick:
+    # concurrent misses collapse in the cache's single-flight lock.
+    ttl_live: int = 5
 
     # Outbound HTTP budget for a single upstream call.
     http_timeout: float = 15.0

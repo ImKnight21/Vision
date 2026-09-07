@@ -140,3 +140,15 @@
     display: none;
   }
 }
+
+/* Touch targets. See the note in IntervalPicker.css: keyed on the pointer, not
+   on the viewport width. The header is fixed-height, so these grow to fill it
+   rather than pushing it taller. */
+@media (pointer: coarse) {
+  .header__button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--space-2);
+  }
+}
