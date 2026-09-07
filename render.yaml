@@ -34,3 +34,16 @@ services:
         value: "120"
       - key: VISION_TTL_OHLCV
         value: "300"
+      # Names, logos, market caps and ranks. Set this in the dashboard, not
+      # here: it is a credential.
+      #
+      # CoinGecko refuses this platform's shared egress address outright.
+      # Measured: 0 of 6 fetches from Render, while the identical code gets
+      # 60 of 60 from a home connection, so it is the address and not the code.
+      # A free demo key moves the limit from the address to the key.
+      #
+      # Without it nothing breaks: prices, candles and every statistic still
+      # render, and the table falls back to ticker symbols with no logos or
+      # market caps. That degradation is deliberate, but it is a degradation.
+      - key: VISION_COINGECKO_API_KEY
+        sync: false

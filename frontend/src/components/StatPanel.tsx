@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Hint } from "./Hint";
 import "./StatPanel.css";
 
 export interface StatItem {
@@ -27,10 +28,13 @@ export function StatPanel({ title, note, items, children }: Props) {
 
       <dl className="stat__list">
         {items.map((item) => (
-          <div className="stat__row" key={item.label} title={item.hint}>
+          <div className="stat__row" key={item.label}>
             <dt className="stat__label">
-              {item.label}
-              {item.hint && <span className="visually-hidden">: {item.hint}</span>}
+              {item.hint ? (
+                <Hint term={item.label} text={item.hint} />
+              ) : (
+                item.label
+              )}
             </dt>
             {/* The leader is decorative: it guides the eye across the gap the
                 way a printed table of contents does. */}

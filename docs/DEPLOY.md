@@ -128,10 +128,20 @@ both upstreams price that in:
 | `binance: HTTP 418` | The shared IP exceeded Binance's request weight and was auto-banned. | None visible. Bybit serves the candles instead. |
 | CoinGecko rows missing | The shared IP is rate-limited. | Prices and every statistic still render; names, logos and market caps do not. |
 
-The first is covered by the fallback chain and needs no action. The second is
-worth fixing with a free CoinGecko demo key, added as `COINGECKO_API_KEY` in
-the Render dashboard: the limit then attaches to the key rather than to the
-address the whole platform shares.
+The first is covered by the fallback chain and needs no action.
+
+The second needs a key. Measured from Render: **0 of 6** metadata fetches got
+through, while the identical code fetching from a home connection got 60 of 60
+-- so it is the address, not the code. Get a free demo key at
+[coingecko.com/en/api](https://www.coingecko.com/en/api) and add it in the
+Render dashboard as `VISION_COINGECKO_API_KEY` (`render.yaml` declares it with
+`sync: false`, so Render prompts for it and never stores it in the repository).
+The limit then attaches to the key rather than to the address the whole
+platform shares.
+
+Metadata is cached for an hour on its own key, separately from the two-minute
+market list, so one successful fetch covers a long stretch of refusals. A
+refusal is never cached, or a single 429 would blank the names for an hour.
 
 ---
 

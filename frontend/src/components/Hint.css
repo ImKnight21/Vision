@@ -1,0 +1,165 @@
+/* The term itself. A dotted underline is the long-standing convention for
+   "there is a definition behind this", and it reads as terminal rather than as
+   a web link, which a solid underline would. */
+.hint {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  /* The browser's own stylesheet sets `text-transform: none` on buttons, and
+     that beats inheritance -- without this the uppercase stat labels quietly
+     turn back into sentence case the moment they become hint triggers. */
+  text-transform: inherit;
+  border-bottom: 1px dotted var(--rule);
+  /* The underline sits under the glyphs rather than on the baseline. */
+  padding-bottom: 1px;
+  transition: color 90ms linear, border-color 90ms linear;
+}
+
+.hint:hover,
+.hint:focus-visible,
+.hint[aria-expanded="true"] {
+  color: var(--phosphor);
+  border-bottom-color: var(--phosphor);
+}
+
+/* A term is about 20px tall, under the 24px minimum a touch target needs. The
+   text cannot simply be padded -- that would push the dotted underline away
+   from the glyphs it belongs to -- so the hit area is grown by an invisible
+   child instead, which costs no layout at all. */
+@media (pointer: coarse) {
+  .hint {
+    position: relative;
+  }
+
+  .hint::before {
+    content: "";
+    position: absolute;
+    /* Stops short of the neighbouring row's own extended area. */
+    inset: -6px -4px;
+  }
+}
+
+/* --- the popup ------------------------------------------------------ */
+
+.hint__pop {
+  position: fixed;
+  /* Above the drawer (100), below the scanline overlay (9999) so the tube
+     still lies over it. */
+  z-index: 200;
+  width: max-content;
+  /* Roughly 40 characters: long enough for a sentence, short enough that the
+     eye does not lose the line in a monospace face. */
+  max-width: min(38ch, calc(100vw - 2 * var(--space-3)));
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  background: var(--bg-panel);
+  border: 1px solid var(--phosphor);
+  box-shadow: var(--glow-hard), 0 10px 30px rgba(0, 0, 0, 0.6);
+  /* Never intercepts the pointer: on a mouse it would break the hover it was
+     opened by, and on touch a tap anywhere is what closes it. */
+  pointer-events: none;
+  /* Hidden until measured. The first frame is drawn at 0,0 to be measured, and
+     showing that frame would make every hint flash in the corner. */
+  visibility: hidden;
+}
+
+.hint__pop--placed {
+  visibility: visible;
+  animation: hint-in 110ms ease-out;
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+/* Corner brackets, as on every other panel. */
+.hint__pop::before,
+.hint__pop::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--phosphor);
+  border-style: solid;
+  opacity: 0.85;
+}
+
+.hint__pop::before {
+  top: -1px;
+  left: -1px;
+  border-width: 1px 0 0 1px;
+}
+
+.hint__pop::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+.hint__term {
+  margin: 0 0 var(--space-1);
+  padding-bottom: var(--space-1);
+  border-bottom: var(--border);
+  font-size: var(--step--1);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+  text-shadow: var(--glow-soft);
+}
+
+.hint__text {
+  margin: 0;
+  /* Sentences, not labels: lower-case, looser leading, no tracking. */
+  font-size: var(--step--1);
+  line-height: 1.65;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+  /* Explanations are prose and may be long; a monospace column needs the
+     help of hyphenation-free wrapping to avoid ragged holes. */
+  text-wrap: pretty;
+}
+
+/* On a phone a floating box would cover the very row being explained, and
+   there is no room beside it. A sheet along the bottom edge leaves the number
+   visible while the explanation is up.
+
+   `!important` on purpose: the placement above is an inline style computed in
+   JS, and this is the one case where the stylesheet has to win. Keeping the
+   breakpoint here rather than in a `matchMedia` call means there is a single
+   definition of what counts as a narrow screen. */
+@media (max-width: 560px) {
+  .hint__pop {
+    top: auto !important;
+    left: var(--space-2) !important;
+    right: var(--space-2);
+    bottom: var(--space-2);
+    width: auto;
+    max-width: none;
+  }
+
+  .hint__pop--placed {
+    animation: hint-up 140ms ease-out;
+  }
+
+  .hint__text {
+    font-size: var(--step-0);
+  }
+}
+
+@keyframes hint-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint__pop--placed {
+    animation: none;
+  }
+}

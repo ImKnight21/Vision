@@ -92,7 +92,18 @@ them below 960px; on wider screens CSS pulls them flush so they read as one
 panel. Do not merge them back together.
 
 **Touch targets are keyed on `(pointer: coarse)`, not on viewport width.** A
-touchscreen tablet is wide and still has no cursor.
+touchscreen tablet is wide and still has no cursor. Standalone controls get
+44px; the inline term triggers in `Hint` get 32px through an invisible
+`::before`, because padding them to 44px would double the height of every
+statistics panel and WCAG treats inline targets differently from buttons.
+
+**Terminology is explained by `Hint`, never by a `title` attribute.** A native
+tooltip cannot be opened by touch at all, so on a phone those explanations were
+unreachable. `Hint` hovers on a mouse, taps open a sheet on a phone, and the
+popup is portalled to `document.body` -- the panels sit inside `.app__main`,
+which scrolls, and a positioned element inside a scrolling box is clipped at
+its edge. Accessibility never depends on the popup: the text sits in the DOM
+permanently behind `aria-describedby`, and the popup is `aria-hidden`.
 
 **Em dashes are banned in user-visible text.** They are the clearest tell of
 generated copy and they render inconsistently in a monospace column. Use a

@@ -1,3 +1,4 @@
+import { Hint } from "./Hint";
 import "./Meter.css";
 
 interface Props {
@@ -15,9 +16,11 @@ export function Meter({ label, position, leftLabel, rightLabel, hint, marks = []
   const clamped = position == null ? null : Math.min(1, Math.max(0, position));
 
   return (
-    <div className="meter" title={hint}>
+    <div className="meter">
       <div className="meter__head">
-        <span className="meter__label">{label}</span>
+        <span className="meter__label">
+          {hint ? <Hint term={label} text={hint} /> : label}
+        </span>
         <span className="meter__readout">
           {clamped == null ? "--" : `${(clamped * 100).toFixed(0)}%`}
         </span>

@@ -48,3 +48,13 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+/* Every label is now a hint trigger. On a touchscreen the row is the tap
+   target, so it gets more room -- but not the 44px used for the toolbar
+   chips: an eight-row panel would then be 350px tall, and these are inline
+   text triggers, which WCAG treats differently from standalone controls. */
+@media (pointer: coarse) {
+  .stat__row {
+    padding: 0.45rem 0;
+  }
+}

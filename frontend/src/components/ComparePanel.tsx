@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { api } from "../api/client";
 import type { MarketRow } from "../api/types";
 import { useAsync } from "../hooks/useAsync";
+import type { StringKey } from "../i18n/dictionary";
 import { useI18n } from "../i18n/useI18n";
+import { Hint } from "./Hint";
 import { magnitude, percent, ratio, signClass } from "../lib/format";
 import "./ComparePanel.css";
 
@@ -30,6 +32,18 @@ function cellStyle(value: number | null): React.CSSProperties {
   // the green/amber switch without a second set of colours.
   return { background: `color-mix(in srgb, ${hue} ${(strength * 42).toFixed(1)}%, transparent)` };
 }
+
+/** Column heading paired with the explanation already written for that term
+ *  in the statistics panels. Same word, same definition, one source. */
+const COLUMNS: ReadonlyArray<readonly [StringKey, StringKey]> = [
+  ["compare.totalReturn", "dist.totalReturnHint"],
+  ["compare.volatility", "vol.realized30dHint"],
+  ["compare.sharpe", "risk.sharpeHint"],
+  ["compare.maxDrawdown", "risk.maxDrawdownHint"],
+  ["compare.beta", "rel.betaHint"],
+  ["compare.correlation", "rel.correlationHint"],
+  ["compare.hurst", "regime.hurstHint"],
+];
 
 export function ComparePanel({ symbol, interval, bars, markets }: Props) {
   const { t } = useI18n();
@@ -155,13 +169,11 @@ export function ComparePanel({ symbol, interval, bars, markets }: Props) {
             <thead>
               <tr>
                 <th scope="col">{t("compare.symbol")}</th>
-                <th scope="col">{t("compare.totalReturn")}</th>
-                <th scope="col">{t("compare.volatility")}</th>
-                <th scope="col">{t("compare.sharpe")}</th>
-                <th scope="col">{t("compare.maxDrawdown")}</th>
-                <th scope="col">{t("compare.beta")}</th>
-                <th scope="col">{t("compare.correlation")}</th>
-                <th scope="col">{t("compare.hurst")}</th>
+                {COLUMNS.map(([label, hint]) => (
+                  <th key={label} scope="col">
+                    <Hint term={t(label)} text={t(hint)} />
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
